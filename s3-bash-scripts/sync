@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+set -a
+source "${SCRIPT_DIR}/../.env"
+set +a
+
+if [ "$#" -lt 2 ]; then
+    echo "Usage: $0 <local-directory> <bucket-name> [--delete]"
+    exit 1
+fi
+
+local_dir="$1"
+bucket="$2"
+shift 2
+
+if [[ " $* " == *" --delete "* ]]; then
+    aws s3 sync "$local_dir" "s3://${bucket}" --delete
+else
+    aws s3 sync "$local_dir" "s3://${bucket}"
+fi
+
+echo "Synced ${local_dir} to s3://${bucket}"

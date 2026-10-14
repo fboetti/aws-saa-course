@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+set -a
+source "${SCRIPT_DIR}/../.env"
+set +a
+
+if [ -z "${1:-}" ]; then
+    echo "Usage: $0 <bucket-name> [local-directory]"
+    exit 1
+fi
+
+bucket="$1"
+region="${AWS_DEFAULT_REGION:-eu-north-1}"
+
+if [ "$region" = "us-east-1" ]; then
+    aws s3api create-bucket --bucket "$bucket"
+else
+    aws s3api create-bucket \
+        --bucket "$bucket" \
+        --create-bucket-configuration "LocationConstraint=${region}"
+fi
+
+echo "Created bucket: $bucket (${region})"
+
+if [ -n "${2:-}" ]; then
+    aws s3 sync "$2" "s3://${bucket}" --delete
+    echo "Synced ${2} to s3://${bucket}"
+fi
