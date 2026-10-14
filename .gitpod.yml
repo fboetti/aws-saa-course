@@ -1,0 +1,39 @@
+tasks:
+  - name: aws-cli
+    env:
+      AWS_CLI_AUTO_PROMPT: on-partial
+    before: |
+      source ./bin/install_aws_cli
+    command: |
+      if [[ -n "${AWS_ACCESS_KEY_ID:-}" && -n "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
+        aws sts get-caller-identity
+      else
+        echo "AWS credentials are not set yet. See README.md -> 'AWS credentials in Gitpod'."
+      fi
+      cd "${GITPOD_REPO_ROOT:-/workspace/aws-saa-course}"
+
+  - name: terraform
+    before: |
+      source ./bin/install_terraform_cli
+    command: |
+      terraform version
+      cd "${GITPOD_REPO_ROOT:-/workspace/aws-saa-course}/infra"
+
+  - name: python
+    before: |
+      source ./bin/install_python_deps
+    command: |
+      python3 -c "import boto3; print('boto3', boto3.__version__)"
+      cd "${GITPOD_REPO_ROOT:-/workspace/aws-saa-course}"
+
+vscode:
+  extensions:
+    - amazonwebservices.aws-toolkit-vscode
+    - hashicorp.terraform
+    - ms-python.python
+    - timonwong.shellcheck
+
+github:
+  prebuilds:
+    main: true
+" path=".gitpod.yml

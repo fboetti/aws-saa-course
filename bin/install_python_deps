@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Keep Python dependencies local to the workspace user, without heavy reinstalls.
+if python3 -c "import boto3" >/dev/null 2>&1; then
+  echo "boto3 already available: $(python3 -c "import boto3; print(boto3.__version__)")"
+else
+  python3 -m pip install --user --upgrade boto3 requests
+fi
+
+cd "${GITPOD_REPO_ROOT:-/workspace/aws-saa-course}"
+" path="bin/install_python_deps

@@ -1,0 +1,25 @@
+# Secrets / local env
+.env
+.aws/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfplan
+
+# AWS CLI download artifacts
+/bin/aws/
+/bin/awscliv2.zip
+/aws/
+/awscliv2.zip
+
+# Python
+__pycache__/
+*.pyc
+
+# OS/editor
+.DS_Store
+.vscode/
+" path=".gitignore
