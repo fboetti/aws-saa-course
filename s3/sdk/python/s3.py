@@ -2,6 +2,8 @@
 
 Creates the bucket named BUCKET_NAME in the configured region.
 
+This is not idempotent! Trying to recreate a resource will go in error (so we added the try-except error)
+
 Usage:
     python3 sdk/python/s3.py
 """

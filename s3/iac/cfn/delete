@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# https://docs.aws.amazon.com/cli/latest/reference/cloudformation/
+
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+set -a
+source "${SCRIPT_DIR}/../../../.env"
+set +a
+
+echo "== delete s3 stack with CFN"
+
+STACK_NAME="cfn-s3-sample"
+
+aws cloudformation delete-stack \
+--stack-name $STACK_NAME
