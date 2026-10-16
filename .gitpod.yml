@@ -36,4 +36,3 @@ vscode:
 github:
   prebuilds:
     main: true
-" path=".gitpod.yml

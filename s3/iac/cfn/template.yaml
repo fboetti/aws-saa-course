@@ -1,12 +1,12 @@
 # CloudFormation (CFN) deploy
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-s3-bucket.html
 
-# This is idempotent!
+# This is idempotent and declarative!
 
 Description: A simple S3 Bucket
 
 Resources:
-  S3Bucket:
+  S3Bucket: # Logical name (we can choose whatever we want)
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: my-bucket-created-with-cfn
+      BucketName: my-bucket-created-with-cfn # Bucket name

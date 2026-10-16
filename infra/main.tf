@@ -27,4 +27,3 @@ output "account_id" {
 output "region" {
   value = var.aws_region
 }
-" path="infra/main.tf

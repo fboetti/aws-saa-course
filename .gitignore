@@ -2,12 +2,21 @@
 .env
 .aws/
 
-# Terraform
+# Terraform (local state + provider/plugin cache + plan files + override files)
+# N.B.: .terraform.lock.hcl va committato di proposito (pinned provider versions)
 .terraform/
+.terraform.tfstate.lock.info
 *.tfstate
 *.tfstate.*
 *.tfvars
 *.tfplan
+*.tfplan.json
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 
 # AWS CLI download artifacts
 /bin/aws/
@@ -22,4 +31,17 @@ __pycache__/
 # OS/editor
 .DS_Store
 .vscode/
-" path=".gitignore
+
+# Binaries / archives (tool installati via script, non sorgenti)
+*.zip
+*.tar.gz
+*.tgz
+*.7z
+*.exe
+*.msi
+*.dll
+*.so
+*.dylib
+bin/terraform
+bin/aws
+bin/aws-cli/

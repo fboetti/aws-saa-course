@@ -7,4 +7,3 @@ Put small, repeatable AWS CLI automation here. Run with:
 ```
 
 Keep scripts idempotent and never hard-code credentials; rely on the Gitpod env vars.
-" path="scripts/README.md

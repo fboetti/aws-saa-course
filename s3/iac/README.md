@@ -1,0 +1,1 @@
+Terraform è un provider esterno (HashiCorp) che funziona in modo multi cloud

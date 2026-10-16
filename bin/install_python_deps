@@ -10,4 +10,3 @@ else
 fi
 
 cd "${GITPOD_REPO_ROOT:-/workspace/aws-saa-course}"
-" path="bin/install_python_deps

@@ -26,7 +26,7 @@ Alternatively set them in the Gitpod web UI: *Settings -> Variables*. Then resta
 
 ### Layout
 
-- `bin/` - install scripts used by `.gitpod.yml`
+- `bin/` - install scripts used by `.gitpod.yml`, plus `bin/load-env` to source the root `.env`
 - `infra/` - Terraform infrastructure as code
 - `scripts/` - Bash scripts that use the AWS CLI
 - `.env.example` - template for optional local overrides
@@ -35,4 +35,13 @@ Alternatively set them in the Gitpod web UI: *Settings -> Variables*. Then resta
 
 - Credentials are intentionally not written to `~/.aws/credentials`; this avoids leaking secrets if the workspace is shared.
 - Destroy any real resources you create (`terraform destroy`) to avoid charges.
-" path="README.md
+
+### Local `.env` (outside Gitpod)
+
+If you run things locally instead of Gitpod, put your values in a root `.env` (copy `.env.example`; the file is gitignored) and inject them into the current shell with:
+
+```bash
+source ./bin/load-env
+```
+
+The command parses `KEY=VALUE` lines (quotes, `export ` prefixes and CRLF are handled), exports each variable, and prints only the variable names, never the values. Run it per terminal session; it must be sourced so the exports land in your shell.

@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# load-env - inject the repo-root .env into the CURRENT shell.
+#
+# Must be SOURCED, not executed (an executed script would export its vars
+# only inside its own child process, which then exits):
+#
+#   source ./bin/load-env      # or:  . ./bin/load-env
+#
+# Docs:
+#   Bash export  -> https://www.gnu.org/software/bash/manual/html_node/Builtin-Commands.html
+#   AWS CLI vars -> https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html
+#   Gitpod env   -> https://www.gitpod.io/docs/environment-variables
+
+_load_env() {
+  local repo_root env_file line key value count=0 skipped=0 lineno=0
+
+  # Repo root: Gitpod env var, else git, else relative to this script.
+  repo_root="${GITPOD_REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+  repo_root="${repo_root:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+  env_file="${repo_root}/.env"
+
+  if [[ ! -f "${env_file}" ]]; then
+    echo "load-env: no .env found at ${env_file}" >&2
+    echo "load-env: copy .env.example -> .env and fill in your values (it is gitignored)." >&2
+    unset -f _load_env                                      # cleanup on this path too
+    return 1
+  fi
+
+  # Parse KEY=VALUE ourselves instead of `source .env`, so a stray line can
+  # never execute arbitrary shell code in the user's terminal.
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    lineno=$((lineno + 1))
+    line="${line%$'\r'}"                                    # tolerate CRLF files
+    [[ -z "${line//[[:space:]]/}" ]] && continue            # blank line
+    [[ "${line}" =~ ^[[:space:]]*# ]] && continue           # comment
+    [[ "${line}" =~ ^[[:space:]]*export[[:space:]]+ ]] &&
+      line="${line#*export }"                               # optional `export ` prefix
+
+    if [[ "${line}" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+      key="${BASH_REMATCH[1]}"
+      value="${BASH_REMATCH[2]}"
+      # Strip one pair of matching surrounding quotes.
+      if [[ "${value}" =~ ^\"(.*)\"$ ]] || [[ "${value}" =~ ^\'(.*)\'$ ]]; then
+        value="${BASH_REMATCH[1]}"
+      fi
+      export "${key}=${value}"                              # values are never printed
+      printf '  %s\n' "exported ${key}"
+      count=$((count + 1))
+    else
+      printf '  %s\n' "skipped malformed line ${lineno}" >&2
+      skipped=$((skipped + 1))
+    fi
+  done < "${env_file}"
+
+  echo "load-env: ${count} variable(s) loaded from ${env_file} (values not shown)."
+  [[ "${skipped}" -gt 0 ]] && echo "load-env: ${skipped} line(s) skipped." >&2
+
+  if [[ -n "${GITPOD_WORKSPACE_ID:-}" ]]; then
+    echo "load-env: inside Gitpod, prefer 'gp env KEY=VALUE' - it survives workspace restarts."
+  fi
+
+  unset -f _load_env                                        # leave no clutter behind
+  return 0
+}
+
+if (return 0 2>/dev/null); then                             # am I being sourced?
+  _load_env
+else
+  echo "load-env: run this with:  source ./bin/load-env" >&2
+  echo "load-env: executing it directly would not export the vars in your shell." >&2
+  exit 1
+fi

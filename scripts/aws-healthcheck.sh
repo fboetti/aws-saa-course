@@ -9,4 +9,3 @@ aws sts get-caller-identity
 echo
 echo "Regions:"
 aws ec2 describe-regions --query 'Regions[].RegionName' --output table
-" path="scripts/aws-healthcheck.sh
