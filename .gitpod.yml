@@ -19,6 +19,15 @@ tasks:
       terraform version
       cd "${GITPOD_REPO_ROOT:-/workspace/aws-saa-course}/infra"
 
+  - name: cdk
+    before: |
+      source ./bin/install_cdk_cli
+      source ./bin/install_python_deps
+    command: |
+      cdk --version
+      python3 -c "import aws_cdk; print('aws-cdk-lib', aws_cdk.__version__ if hasattr(aws_cdk, '__version__') else 'installed')"
+      cd "${GITPOD_REPO_ROOT:-/workspace/aws-saa-course}"
+
   - name: python
     before: |
       source ./bin/install_python_deps

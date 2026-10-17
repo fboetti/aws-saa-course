@@ -9,4 +9,11 @@ else
   python3 -m pip install --user --upgrade boto3 requests
 fi
 
+# AWS CDK for Python: aws-cdk-lib (JSII bindings) + the constructs base library.
+if python3 -c "import aws_cdk" >/dev/null 2>&1; then
+  echo "aws-cdk-lib already available: $(python3 -m pip show aws-cdk-lib | awk '/^Version:/ {print $2}')"
+else
+  python3 -m pip install --user --upgrade aws-cdk-lib constructs
+fi
+
 cd "${GITPOD_REPO_ROOT:-/workspace/aws-saa-course}"

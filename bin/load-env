@@ -6,6 +6,8 @@
 #
 #   source ./bin/load-env      # or:  . ./bin/load-env
 #
+# Works under bash and zsh.
+#
 # Docs:
 #   Bash export  -> https://www.gnu.org/software/bash/manual/html_node/Builtin-Commands.html
 #   AWS CLI vars -> https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html
@@ -16,7 +18,15 @@ _load_env() {
 
   # Repo root: Gitpod env var, else git, else relative to this script.
   repo_root="${GITPOD_REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null)}"
-  repo_root="${repo_root:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+  if [[ -z "${repo_root}" ]]; then
+    # Locate this script so we can find the repo root.
+    # zsh: ${(%):-%x}  |  bash: ${BASH_SOURCE[0]}
+    if [[ -n "${ZSH_VERSION:-}" ]]; then
+      repo_root="$(cd "$(dirname "${(%):-%x}")/.." && pwd)"
+    else
+      repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    fi
+  fi
   env_file="${repo_root}/.env"
 
   if [[ ! -f "${env_file}" ]]; then
@@ -28,6 +38,7 @@ _load_env() {
 
   # Parse KEY=VALUE ourselves instead of `source .env`, so a stray line can
   # never execute arbitrary shell code in the user's terminal.
+  # (No BASH_REMATCH: zsh stores capture groups in $match instead.)
   while IFS= read -r line || [[ -n "${line}" ]]; do
     lineno=$((lineno + 1))
     line="${line%$'\r'}"                                    # tolerate CRLF files
@@ -36,20 +47,35 @@ _load_env() {
     [[ "${line}" =~ ^[[:space:]]*export[[:space:]]+ ]] &&
       line="${line#*export }"                               # optional `export ` prefix
 
-    if [[ "${line}" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
-      key="${BASH_REMATCH[1]}"
-      value="${BASH_REMATCH[2]}"
-      # Strip one pair of matching surrounding quotes.
-      if [[ "${value}" =~ ^\"(.*)\"$ ]] || [[ "${value}" =~ ^\'(.*)\'$ ]]; then
-        value="${BASH_REMATCH[1]}"
-      fi
-      export "${key}=${value}"                              # values are never printed
-      printf '  %s\n' "exported ${key}"
-      count=$((count + 1))
-    else
-      printf '  %s\n' "skipped malformed line ${lineno}" >&2
+    case "${line}" in
+      *=*)
+        key="${line%%=*}"                                   # everything before first '='
+        value="${line#*=}"                                  # everything after first '='
+        ;;
+      *)
+        printf '  %s\n' "skipped malformed line ${lineno}" >&2
+        skipped=$((skipped + 1))
+        continue
+        ;;
+    esac
+
+    # key must be a valid identifier: [A-Za-z_][A-Za-z0-9_]*
+    # (use =~ instead of case so the pattern behaves identically under bash and zsh)
+    if [[ ! "${key}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+      printf '  %s\n' "skipped malformed line ${lineno} (bad key: ${key})" >&2
       skipped=$((skipped + 1))
+      continue
     fi
+
+    # Strip one pair of matching surrounding quotes.
+    case "${value}" in
+      \"*\") value="${value#\"}"; value="${value%\"}" ;;
+      \'*\') value="${value#\'}"; value="${value%\'}" ;;
+    esac
+
+    export "${key}=${value}"                                # values are never printed
+    printf '  %s\n' "exported ${key}"
+    count=$((count + 1))
   done < "${env_file}"
 
   echo "load-env: ${count} variable(s) loaded from ${env_file} (values not shown)."

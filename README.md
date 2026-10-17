@@ -7,6 +7,7 @@ This repository is configured for [Gitpod](https://www.gitpod.io/). On workspace
 
 - AWS CLI v2
 - Terraform
+- AWS CDK CLI (`cdk`) plus the Python CDK library (`aws-cdk-lib`, `constructs`)
 - Python 3 with `boto3` and `requests`
 - VS Code extensions for AWS, Terraform, Python and ShellCheck
 
@@ -23,6 +24,40 @@ gp env AWS_REGION=eu-north-1
 ```
 
 Alternatively set them in the Gitpod web UI: *Settings -> Variables*. Then restart the workspace. The AWS CLI reads these variables automatically, and `aws sts get-caller-identity` in the `aws-cli` task confirms the login.
+
+### AWS CDK in Python
+
+The workspace ships both halves of the CDK:
+
+- the `cdk` CLI (Node.js package, installed globally) that runs the commands
+- the Python library `aws-cdk-lib` (+ `constructs`) that you write the app with
+
+You only need to download the CDK package manually outside Gitpod. On your machine install Node.js, then:
+
+```bash
+npm install -g aws-cdk            # the CLI
+pip install aws-cdk-lib constructs  # the Python library
+```
+
+Bootstrap the target account/region once (creates the CDK toolkit S3 bucket and roles):
+
+```bash
+cdk bootstrap aws://<ACCOUNT_ID>/<REGION>
+```
+
+Create a new Python CDK app and deploy it:
+
+```bash
+mkdir my-app && cd my-app
+cdk init app --language python     # scaffolds the app and a .venv
+source .venv/bin/activate
+pip install -r requirements.txt    # aws-cdk-lib + constructs
+cdk synth                          # render CloudFormation from app.py
+cdk deploy                         # apply the stack
+cdk destroy                        # remove the stack when done
+```
+
+Inside the repo, `cdk` commands must be run from the folder that contains `cdk.json` (the `cdk` Gitpod task starts you there). The synthesized templates land in `cdk.out/`, which is gitignored.
 
 ### Layout
 

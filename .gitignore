@@ -28,6 +28,9 @@ override.tf.json
 __pycache__/
 *.pyc
 
+# AWS CDK (synth output)
+cdk.out/
+
 # OS/editor
 .DS_Store
 .vscode/

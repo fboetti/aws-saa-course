@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Install the AWS CDK CLI (npm package "aws-cdk").
+# The CDK apps in this repo are written in Python (aws-cdk-lib installed via pip),
+# but the "cdk" command itself ships as a Node.js package.
+if ! command -v npm >/dev/null 2>&1; then
+  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+  sudo apt-get install -y nodejs
+fi
+
+if command -v cdk >/dev/null 2>&1; then
+  echo "AWS CDK CLI already installed: $(cdk --version)"
+else
+  npm install -g aws-cdk
+fi
+
+cdk --version
+cd "${GITPOD_REPO_ROOT:-/workspace/aws-saa-course}"
