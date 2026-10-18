@@ -87,6 +87,9 @@ Important details:
 - Retention periods can be extended (never shortened) on any locked version.
 - Deleting an object with versioning just adds a delete marker — but the *version* itself cannot be removed until the retention expires, which is what makes Object Lock genuinely tamper-proof.
 
+NB: Object Locking CAN ONLY BE SET via the AWS API (e.g. cli, sdk, ecc) and not with the AWS Console. This is to avoid misconfiguration by non-techincal users.
+(options: `object-lock-mode`, `object-lock-retain-until-date`)
+
 ## Versioning
 
 Versioning turns every write into a **new version** instead of an overwrite — the backbone of object-level durability and recovery:

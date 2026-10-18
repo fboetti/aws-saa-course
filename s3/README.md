@@ -41,20 +41,22 @@ The full comparison (names, supported features, endpoints) is in a dedicated doc
 
 ## Storage Classes
 
-S3 offers several storage classes to trade cost against access speed. All except **Glacier Instant Retrieval** are for data that is *infrequently* accessed:
+S3 offers several storage classes to trade cost against access speed (trade Retrieval Time, Accessibility, Durability). All except **Glacier Instant Retrieval** are for data that is *infrequently* accessed:
 
 | Storage Class | Retrieval time | Use case |
 |---|---|---|
 | **S3 Standard** | milliseconds | Frequently accessed data, general purpose, ≥3 AZs |
+| **S3 Intelligent-Tiering** | milliseconds | Unknown/changing access patterns — objects are auto-moved between tiers based on usage |
+| **S3 Express One Zone** | single-digit milliseconds | High-performance, latency-sensitive workloads; requires a [directory bucket](bucket-types.md), single AZ |
 | **S3 Standard-Infrequent Access (S3 Standard-IA)** | milliseconds | Less frequent access, but you need fast retrieval; lower storage, per-GB retrieval fee |
 | **S3 One Zone-Infrequent Access** | milliseconds | Infrequently accessed, *recreatable* data stored in a single AZ (cheaper, less durable) |
-| **S3 Intelligent-Tiering** | milliseconds | Unknown/changing access patterns — objects are auto-moved between tiers based on usage |
 | **S3 Glacier Instant Retrieval** | milliseconds | Long-lived archive with *occasional* immediate reads (e.g. quarterly media access); cheapest with instant access |
 | **S3 Glacier Flexible Retrieval** (formerly Glacier) | minutes to hours | Archive with rarely needed retrieval; free bulk restores of 3–5 hours |
 | **S3 Glacier Deep Archive** | hours | Longest-term retention, cheapest storage; 12–48 hours retrieval |
-| **S3 Express One Zone** | single-digit milliseconds | High-performance, latency-sensitive workloads; requires a [directory bucket](bucket-types.md), single AZ |
 
 **Frequent vs. infrequent access** is decided by how often you expect to read the data; **retrieval time** is decided by how quickly you need it back. You can also add **provisioned throughput** (capacity units) when you need to sustain high GET/PUT rates beyond your account's baseline.
+
+S3 Outposts has its own storage class.
 
 ## Bucket Properties / Features
 
@@ -172,6 +174,7 @@ Hands-on material for this section lives alongside these notes:
 Companion theory docs, linked from this overview:
 
 - [Bucket Naming Rules](bucket-naming-rules.md) — URL/DNS uniqueness, allowed characters, reserved prefixes and suffixes.
+- [Request Styles](request-styles.md) — virtual hosted-style vs path-style URLs: formats, TLS/dots gotchas, and the path-style deprecation.
 - [Bucket Types](bucket-types.md) — general purpose (flat) vs directory buckets, zero-byte folder objects, S3 Express One Zone.
 - [Object Overview](objects.md) — objects as data vs infrastructure: ETags, checksums, prefixes, metadata, tags, Object Lock, versioning.
 - [Bucket Restrictions and Limitations](bucket-restrictions-and-limitations.md) — bucket quotas, object size limits, what "high availability" applies to.
