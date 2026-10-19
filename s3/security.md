@@ -247,6 +247,8 @@ S3 can be reached privately in two ways, and the exam loves to contrast them:
 
 **Cross-Origin Resource Sharing (CORS)** is a *browser* mechanism: a page at `https://app.example.com` that fetches an object from `https://bucket.s3.amazonaws.com/photo.jpg` is making a **cross-origin request**, and the browser blocks reading the response unless the *bucket* (the resource origin) explicitly allows it.
 
+CORS config can be passed as JSON or XML (AWS console only accepts JSON).
+
 - Configured on the bucket with `PutBucketCors`, as a set of rules:
 
 ```json
