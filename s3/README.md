@@ -156,6 +156,8 @@ The full restrictions list lives in **[Bucket Restrictions and Limitations](buck
 
 ## Security Checklist (SAA exam focus)
 
+The full treatment of every control below — how the layers combine and how they map to exam questions — is in **[S3 Security Overview](security.md)**.
+
 - Encrypt everything (SSE-S3 for simple, SSE-KMS when you need key control/auditing).
 - Enable **Block Public Access** unless the bucket is intentionally public.
 - Use **bucket policies** with `aws:SecureTransport` to deny non-HTTPS requests.
@@ -181,6 +183,7 @@ Companion theory docs, linked from this overview:
 - [Storage Classes Deep Dive](storage-classes.md) — durability, availability, redundancy, retrieval times, throughput and per-class pricing for all eight storage classes.
 - [Object Overview](objects.md) — objects as data vs infrastructure: ETags, checksums, prefixes, metadata, tags, Object Lock, versioning.
 - [Bucket Restrictions and Limitations](bucket-restrictions-and-limitations.md) — bucket quotas, object size limits, what "high availability" applies to.
+- [S3 Security Overview](security.md) — bucket policies, ACLs, Object Ownership, Block Public Access, Access Analyzer, access points/grants, PrivateLink/CORS, encryption (in transit, server- and client-side), versioning/MFA Delete, tags, compliance and infrastructure security.
 
 ## References
 
