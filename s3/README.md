@@ -56,6 +56,8 @@ S3 offers several storage classes to trade cost against access speed (trade Retr
 
 **Frequent vs. infrequent access** is decided by how often you expect to read the data; **retrieval time** is decided by how quickly you need it back. You can also add **provisioned throughput** (capacity units) when you need to sustain high GET/PUT rates beyond your account's baseline.
 
+The full deep dive — durability, availability, data redundancy, retrieval times, throughput/scalability, use cases and pricing (storage, requests, retrieval fees, minimum durations) for **every** storage class — is in **[Storage Classes Deep Dive](storage-classes.md)**.
+
 S3 Outposts has its own storage class.
 
 ## Bucket Properties / Features
@@ -176,6 +178,7 @@ Companion theory docs, linked from this overview:
 - [Bucket Naming Rules](bucket-naming-rules.md) — URL/DNS uniqueness, allowed characters, reserved prefixes and suffixes.
 - [Request Styles](request-styles.md) — virtual hosted-style vs path-style URLs: formats, TLS/dots gotchas, and the path-style deprecation.
 - [Bucket Types](bucket-types.md) — general purpose (flat) vs directory buckets, zero-byte folder objects, S3 Express One Zone.
+- [Storage Classes Deep Dive](storage-classes.md) — durability, availability, redundancy, retrieval times, throughput and per-class pricing for all eight storage classes.
 - [Object Overview](objects.md) — objects as data vs infrastructure: ETags, checksums, prefixes, metadata, tags, Object Lock, versioning.
 - [Bucket Restrictions and Limitations](bucket-restrictions-and-limitations.md) — bucket quotas, object size limits, what "high availability" applies to.
 
