@@ -62,6 +62,7 @@ Inside the repo, `cdk` commands must be run from the folder that contains `cdk.j
 ### Layout
 
 - `bin/` - install scripts used by `.gitpod.yml`, plus `bin/load-env` to source the root `.env`
+- `concepts/` - study notes on AWS regions, availability zones and resilience patterns
 - `infra/` - Terraform infrastructure as code
 - `scripts/` - Bash scripts that use the AWS CLI
 - `.env.example` - template for optional local overrides
