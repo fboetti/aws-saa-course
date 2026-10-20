@@ -305,9 +305,13 @@ Protecting data **while it moves** — i.e. TLS/SSL between client and S3.
 
 Notes:
 
+
+- **Server-side Encryption** only encrypts THE CONTENT of an object, not its metadata.
 - **Default encryption** on the bucket sets the encryption for all new/overwrite objects (SSE-S3 or SSE-KMS); a **bucket policy** can *require* it by denying `PutObject` without the right header.
 - **SSE-C** requests must use **HTTPS**, and you must supply the **identical key on every GET** — losing the key means losing the data (AWS explicitly can't recover it).
 - **S3 Bucket Keys**: for SSE-KMS, a bucket-level key is used to derive per-object keys — reduces KMS calls (and cost) by up to ~99%, with the same audit properties.
+- **DSSE-KMS**: it's SSE-KMS, with the INCLUSION OF CLIENT-SIDE ENCRYPTION.
+Data in encrypted twice and the client-side key comes from KMS.
 - Encryption is **transparent**: SDKs/CLI/consoles just work; there is nothing to change in applications for SSE-S3/SSE-KMS.
 - Keys are encrypted with **FIPS 140-2/140-3 validated** hardware modules (S3 uses validated cryptographic modules for SSE-S3).
 - SSE protects **at rest** only — pair it with [in-transit encryption](#in-transit-encryption).
