@@ -10,7 +10,7 @@ Security in S3 is **layered**: no single setting protects a bucket, several cont
 - [Object Ownership](#object-ownership)
 - [Block Public Access](#block-public-access)
 - [IAM Access Analyzer for S3](#iam-access-analyzer-for-s3)
-- [Access Points](#access-points)
+- **[Access Points](#access-points)** / **[Object Lambda Access Points](#object-lambda-access-points)**
 - [Access Grants](#access-grants)
 - [PrivateLink for Amazon S3](#privatelink-for-amazon-s3)
 - [Internetwork traffic privacy](#internetwork-traffic-privacy)
@@ -180,6 +180,27 @@ An **S3 access point** is a **named endpoint with its own resource policy**, att
 - **S3 Multi-Region Access Points** give a *single* hostname fronting buckets in multiple regions, with cross-region replication underneath — for global applications (read locality / failover).
 
 **Exam mapping:** "many applications share one bucket with different permissions / policy is too large" → **access points**. "Global app, single endpoint across regions" → **Multi-Region Access Point**. "Bucket must only be reachable from the VPC" → VPC-only access point (or a gateway-endpoint `aws:SourceVpce` condition).
+
+---
+
+## Object Lambda Access Points
+
+An **S3 Object Lambda Access Point** runs an **AWS Lambda function on the *output* of read requests**, so every caller receives a **transformed version of the object** while the stored object stays untouched.
+
+- It intercepts standard **GET, HEAD and LIST** requests made through it: S3 fetches the original object, invokes your Lambda, and the client receives what the Lambda returns. **Writes are not transformed**, and Object Lambda is **not supported on directory buckets**.
+- Built from three pieces: the **Object Lambda Access Point** itself, a normal **supporting S3 access point** (the underlying data source), and the **Lambda function + configuration** saying which actions (`GetObject`, `HeadObject`, `ListObjects…`) it applies to.
+- The Lambda reads the original via a **pre-signed URL** in the event payload and sends the result back with the **`s3-object-lambda:WriteGetObjectResponse`** API (the execution role needs `s3-object-lambda:WriteGetObjectResponse`; the managed policy `AmazonS3ObjectLambdaExecutionRolePolicy` covers it).
+- The application just swaps the bucket name for the **Object Lambda Access Point ARN** — no change to the stored data.
+
+**Typical uses (exam triggers):**
+
+- **Anonymize / redact data on read** — production data returned *anonymized* (e.g. PII scrubbed) for a specific consumer; AWS ships prebuilt Lambdas in the **Serverless Application Repository** for PII detection/redaction and decompression.
+- **One master dataset, many views** — filter by tenant/role, different schemas or formats per consumer, **without creating and maintaining derivative copies** of the same objects.
+- **On-the-fly image resizing / thumbnails**, decompression, format conversion.
+
+**Trade-offs:** every read pays **Lambda cost + added latency**, so it is a *transformation* tool, not a caching/backup one; permissions must be granted across all pieces (Object Lambda AP policy, supporting access point policy, Lambda role). Context keys such as `s3-object-lambda:TlsVersion` and `s3-object-lambda:AuthType` can be used in its resource policy.
+
+**Exam mapping:** "different consumers need *different representations* of the same objects (anonymized, filtered, resized) without duplicating the data" → **S3 Object Lambda Access Point**.
 
 ---
 

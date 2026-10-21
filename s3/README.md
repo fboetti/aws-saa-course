@@ -12,6 +12,7 @@ Key characteristics:
 - **Object storage, not file storage**: there is no real directory tree. Keys are flat strings like `images/2026/photo.jpg`; the `/` characters just *look* like folders in the console.
 - **Regional service**: a bucket is created in a specific AWS region and its name must be unique **globally** across all AWS accounts.
 - **Virtually unlimited scale**: no maximum bucket size; you pay for what you store plus requests and data transfer.
+- **Strong read-after-write consistency**: since December 2020 every `PUT`, overwrite, `DELETE` and `LIST` is immediately visible to subsequent reads — see [Data Consistency](data-consistency.md).
 - **Designed for 99.999999999% (eleven nines) durability** and 99.99% availability (Standard), because objects are stored redundantly across multiple devices in a minimum of three Availability Zones.
 
 ## Buckets and Objects
@@ -77,6 +78,8 @@ S3 Outposts has its own storage class.
 - Replication is **asynchronous** and applies only to **new** objects created after replication is configured (existing objects are not copied unless you run a backfill/batch replication).
 - Requires versioning on both source and destination buckets.
 
+The full deep dive — what is/isn't replicated, delete-marker rules, cross-account setup, Replication Time Control (RTC) and S3 Batch Replication — is in **[S3 Object Replication](replication.md)**.
+
 ### Lifecycle Rules
 
 Rules that automate object transitions over time, e.g.:
@@ -84,6 +87,8 @@ Rules that automate object transitions over time, e.g.:
 - Move to **Standard-IA** after 30 days, **Glacier** after 90 days, **Deep Archive** after 365 days.
 - **Expire (delete)** old versions or incomplete multipart uploads after N days.
 - Works together with versioning (can clean up old versions and delete markers).
+
+The full treatment — action types, minimum storage durations, the 128 KB transition default, billing vs execution delays, precedence rules and versioning interplay — is in **[S3 Lifecycle](lifecycle.md)**.
 
 ### Encryption
 
@@ -106,6 +111,7 @@ Multiple layers, used together:
 - **Block Public Access (BPA)** — four safety settings (block public ACLs, ignore public ACLs, block public bucket policies, restrict public bucket policies) that lock a bucket down; enabled by default on new buckets.
 - **Pre-signed URLs** — temporary, signed URLs you generate with your credentials to grant time-limited access to a specific object without making it public.
 - **Access Points** — named endpoints with their own policies, useful when many applications share one bucket.
+- **Object Lambda Access Points** — run a Lambda on the *output* of GET/HEAD/LIST requests, so each consumer gets a transformed view (anonymized, filtered, resized) of the same stored object — no derivative copies.
 
 ### Static Website Hosting
 
@@ -123,7 +129,45 @@ Buckets can emit events when things happen, delivered to:
 - **SQS queues**
 - **EventBridge** (which can also route to dozens of other AWS services)
 
-Events include `ObjectCreated`, `ObjectRemoved`, `ObjectRestore` (Glacier), etc. This is the backbone of many serverless data pipelines.
+Events include `ObjectCreated`, `ObjectRemoved`, `ObjectRestore` (Glacier), etc. This is the backbone of many serverless data pipelines — the broader service landscape around S3 is in **[S3 × AWS Services](integrations.md)**.
+
+### Mountpoint for Amazon S3
+
+**Mountpoint for Amazon S3** is an open-source file client (Linux, FUSE + AWS CRT) that mounts a bucket as a **local file system**, translating file operations into S3 API calls — so legacy/file-based applications get S3's elastic storage and throughput through a file interface.
+
+- Reads: **sequential and random**, files up to **50 TB**; writes: **create new files sequentially only** — it **cannot modify existing files** or delete directories, and there are **no symlinks, no file locking, no full POSIX**.
+- Designed for **read-heavy, many-instance workloads**: ML training, genomics, rendering, autonomous-vehicle simulation, ETL over TB–PB data lakes; repeated reads can be **cached** on instance storage/memory/EBS.
+- Each file = one object key (`Data/x.csv` → directory `Data`, file `x.csv`). No filesystem charge — you pay normal **S3 requests + data transfer** (Mountpoint itself is free/open source).
+- **Not a shared file system**: many readers + one sequential writer is the sweet spot; if you need locking/POSIX permissions AWS points you to **FSx for Lustre with a data repository association** to the bucket.
+
+**Exam mapping (file storage decision):**
+
+| Requirement | Answer |
+|---|---|
+| High-throughput file-style reads of a huge S3 data lake from Linux, no locking needed | **Mountpoint for Amazon S3** |
+| Shared POSIX file system, concurrent read/write, multi-AZ, Linux/NFS | **Amazon EFS** |
+| HPC / machine-learning workloads needing full POSIX, blazing throughput, S3-linked repo | **Amazon FSx for Lustre** |
+| Windows file shares / AD integration, SMB | **Amazon FSx for Windows File Server** |
+| On-premises apps needing file/byte access to S3-like storage with local caching | **AWS Storage Gateway (File Gateway)** |
+
+"Applications must keep using `open()`/`read()` on Linux against an S3 dataset, but don't need locking" → **Mountpoint for S3**; "they *do* need locking/POSIX" → **FSx for Lustre** (AWS's own answer in the docs).
+
+### Requester Pays
+
+With **Requester Pays** buckets, the **person who downloads the data pays for it** — the classic answer to *"the bucket owner is tired of paying egress for everyone else's downloads"*:
+
+- The bucket owner flips `RequestPaymentConfiguration` → `Payer = Requester` (bucket-level only, **never per object**). **Storage costs always stay with the bucket owner**; the requester pays the **requests + data download (egress)**.
+- **Use case**: sharing huge datasets — reference data, geospatial data, web-crawl data, genomics — with third parties who should bear their own download costs.
+- **Every request must be authenticated and must opt in**: the requester sends the **`x-amz-request-payer: requester`** header (or `RequestPayer` query parameter; `--request-payer requester` in the CLI; include it in **pre-signed URLs** too). The response then carries `x-amz-request-charged: requester`.
+- **No header → `403 Access Denied` — and the *bucket owner* pays for that failed request.** Same if authentication fails or the request is anonymous. An assumed IAM role means **the role's account** is charged.
+
+**Unsupported / hard limits (exam traps):**
+
+- **Anonymous access is impossible** — which also means **Requester Pays buckets do not work with static website hosting**: any request through the website endpoint returns **403**.
+- Not supported: SOAP, BitTorrent, and using the bucket as (or logging to) an end-user logging target.
+- **Glacier restores**: requester pays only the restore *request*; the **bucket owner** pays the retrieval charges.
+
+**Exam mapping:** "share a large dataset; consumers (not the owner) should pay download costs" → **Requester Pays**. "Public/anonymous website must stay free for visitors" → **not** Requester Pays (use CloudFront + OAI/OAC for free egress patterns instead). "Consumers need only *temporary, fine-grained* access" → [pre-signed URLs](#access-control) rather than a billing switch.
 
 ### Other Notable Features
 
@@ -131,7 +175,7 @@ Events include `ObjectCreated`, `ObjectRemoved`, `ObjectRestore` (Glacier), etc.
 - **Transfer acceleration** — upload over CloudFront edge locations for long-distance transfers.
 - **S3 Batch Operations** — apply an action (copy, tag, restore, modify ACLs) to billions of objects with a single job.
 - **S3 Inventory** — periodic list of all objects and metadata for audit/analysis.
-- **Requester Pays** — the requester (not the bucket owner) pays data transfer and request costs.
+- **Requester Pays** — the requester (not the bucket owner) pays data transfer and request costs — see [Requester Pays](#requester-pays).
 - **Object Lock** — WORM (write-once-read-many) protection for compliance; cannot be deleted or overwritten for a retention period. Requires versioning.
 - **Tagging** — key/value tags on buckets and objects, useful for cost allocation and lifecycle policies.
 
@@ -182,8 +226,12 @@ Companion theory docs, linked from this overview:
 - [Bucket Types](bucket-types.md) — general purpose (flat) vs directory buckets, zero-byte folder objects, S3 Express One Zone.
 - [Storage Classes Deep Dive](storage-classes.md) — durability, availability, redundancy, retrieval times, throughput and per-class pricing for all eight storage classes.
 - [Object Overview](objects.md) — objects as data vs infrastructure: ETags, checksums, prefixes, metadata, tags, Object Lock, versioning.
+- [Data Consistency](data-consistency.md) — strong read-after-write consistency since Dec 2020, what is still eventually consistent (replication, notifications) and conditional writes.
+- [S3 Object Replication](replication.md) — CRR vs SRR, prerequisites, what is/isn't replicated, delete markers, Replication Time Control, Batch Replication.
+- [S3 Lifecycle](lifecycle.md) — transitions and expirations, minimum storage durations, small-object default, billing vs execution delays, versioning cleanup.
+- [S3 × AWS Services](integrations.md) — interoperability: Athena, Glue, EMR, Spectrum, Firehose, Lambda/SageMaker, Macie/GuardDuty/AWS Backup, Transfer Family.
 - [Bucket Restrictions and Limitations](bucket-restrictions-and-limitations.md) — bucket quotas, object size limits, what "high availability" applies to.
-- [S3 Security Overview](security.md) — bucket policies, ACLs, Object Ownership, Block Public Access, Access Analyzer, access points/grants, PrivateLink/CORS, encryption (in transit, server- and client-side), versioning/MFA Delete, tags, compliance and infrastructure security.
+- [S3 Security Overview](security.md) — bucket policies, ACLs, Object Ownership, Block Public Access, Access Analyzer, access points/Access Grants/Object Lambda, PrivateLink/CORS, encryption (in transit, server- and client-side), versioning/MFA Delete, tags, compliance and infrastructure security.
 
 ## References
 
