@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 <vpc-id>"
+    exit 1
+else
+    export VPC_ID="$1"
+fi
+
+aws ec2 delete-vpc \
+    --vpc-id "$VPC_ID" \
+    --region eu-north-1

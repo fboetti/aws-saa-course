@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+# Create our vpc
+VPC_ID=$(
+    aws ec2 create-vpc \
+        --cidr-block "172.1.0.0/16" \
+        --region eu-north-1 \
+        --tag-specifications 'ResourceType=vpc,Tags=[{Key=Name,Value=my-vpc-fboetti}]' \
+        --query Vpc.VpcId \
+        --output text
+)
+
+echo "Created VPC with ID: $VPC_ID"
+
+# Create an IGW (Internet Gateway)
+
+IGW_ID=$(
+    aws ec2 create-internet-gateway \
+        --region eu-north-1 \
+        --tag-specifications 'ResourceType=internet-gateway,Tags=[{Key=Name,Value=my-igw-fboetti}]' \
+        --query InternetGateway.InternetGatewayId \
+        --output text
+)
+
+echo "Created IGW with ID: $IGW_ID"
+
+# Attach the IGW to the VPC
+
+aws ec2 attach-internet-gateway \
+    --vpc-id "$VPC_ID" \
+    --internet-gateway-id "$IGW_ID" \
+    --region eu-north-1
