@@ -7,6 +7,40 @@ else
     export VPC_ID="$1"
 fi
 
+# Detach the IGW from the VPC and delete it
+
+IGW_ID=$(
+    aws ec2 describe-internet-gateways \
+        --filters "Name=attachment.vpc-id,Values=$VPC_ID" \
+        --query "InternetGateways[0].InternetGatewayId" \
+        --output text
+)
+
+aws ec2 detach-internet-gateway \
+    --vpc-id "$VPC_ID" \
+    --internet-gateway-id "$IGW_ID" \
+    --region eu-north-1
+
+# Delete the IGW
+
+aws ec2 delete-internet-gateway \
+    --internet-gateway-id "$IGW_ID" \
+    --region eu-north-1
+
+# Delete the subnet associated with the VPC
+
+SUBNET_ID=$(
+    aws ec2 describe-subnets \
+        --filters "Name=vpc-id,Values=$VPC_ID" \
+        --query "Subnets[0].SubnetId" \
+        --output text
+)
+
+aws ec2 delete-subnet \
+    --subnet-id "$SUBNET_ID" \
+    --region eu-north-1
+
+
 aws ec2 delete-vpc \
     --vpc-id "$VPC_ID" \
     --region eu-north-1

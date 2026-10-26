@@ -236,6 +236,6 @@ Companion theory docs, linked from this overview:
 ## References
 
 - Course video: https://www.youtube.com/watch?v=c3Cn4xYfxJY&t=18393s (S3 from 5:06:32)
-- ExamPro SAA-C03 cheat sheet: https://www.exampro.com/ssa-c03 (source of the restrictions list)
+- ExamPro SAA-C03 cheat sheet: https://www.exampro.co/saa-c03 (source of the restrictions list)
 - AWS S3 documentation: https://docs.aws.amazon.com/s3/
 - S3 storage classes: https://aws.amazon.com/s3/storage-classes/

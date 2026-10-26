@@ -30,3 +30,43 @@ aws ec2 attach-internet-gateway \
     --vpc-id "$VPC_ID" \
     --internet-gateway-id "$IGW_ID" \
     --region eu-north-1
+
+# Create a new subnet
+
+SUBNET_ID=$(
+    aws ec2 create-subnet \
+        --vpc-id "$VPC_ID" \
+        --cidr-block "172.1.0.0/20" \
+        --region eu-north-1 \
+        --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=my-subnet-fboetti}]' \
+        --query Subnet.SubnetId \
+        --output text
+)
+
+echo "Created Subnet with ID: $SUBNET_ID"
+
+# Associate the subnet with the route table
+
+aws ec2 associate-route-table \
+    --subnet-id "$SUBNET_ID" \
+    --route-table-id "$(
+        aws ec2 describe-route-tables \
+            --filters "Name=vpc-id,Values=$VPC_ID" \
+            --query "RouteTables[0].RouteTableId" \
+            --output text
+    )" \
+    --region eu-north-1
+
+
+# Create a route to the IGW
+
+aws ec2 create-route \
+    --route-table-id "$(
+        aws ec2 describe-route-tables \
+            --filters "Name=vpc-id,Values=$VPC_ID" \
+            --query "RouteTables[0].RouteTableId" \
+            --output text
+    )" \
+    --destination-cidr-block "0.0.0.0/0" \
+    --gateway-id "$IGW_ID" \
+    --region eu-north-1

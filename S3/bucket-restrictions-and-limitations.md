@@ -1,6 +1,6 @@
 # S3 — Bucket Restrictions and Limitations
 
-Notes from the course cheat sheet ([exampro.co/ssa-c03](https://www.exampro.com/ssa-c03)):
+Notes from the course cheat sheet ([exampro.co/saa-c03](https://www.exampro.co/saa-c03)):
 
 - You can by default create **100 buckets** per account.
 - You can create a service request to increase the limit to **1,000 buckets** (and further via AWS Support).
