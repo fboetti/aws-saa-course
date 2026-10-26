@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
 aws cloudformation deploy \
-  --template-file ./AWS\ API/sts/template.yaml \
+  --template-file "$(dirname "$0")/template.yaml" \
   --stack-name sts-aws-saa-course \
   --capabilities CAPABILITY_NAMED_IAM

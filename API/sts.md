@@ -85,17 +85,28 @@ Key knobs and traps:
 |---|---|---|
 | `AssumeRole` | 1 h | **12 h** (role's `MaxSessionDuration`) |
 | `AssumeRole` **chained** | 1 h | **1 h** (hard cap) |
-| `AssumeRoleWithSAML` / `WithWebIdentity` | 1 h | **12 h** |
-| `GetSessionToken` (IAM user, MFA) | 12 h | **36 h** |
-| `GetFederationToken` | 12 h | **36 h** |
+| `AssumeRoleWithSAML` / `WithWebIdentity` | 1 h | **12 h** (role's `MaxSessionDuration`) |
+| `GetSessionToken` (IAM user, MFA) | 12 h | **36 h** (root user: **1 h**) |
+| `GetFederationToken` | 12 h | **36 h** (root user: **1 h**) |
 | IAM role credentials on EC2/Lambda/ECS | auto-rotated | role max, refreshed before expiry |
+
+The **minimum** for every call is **15 minutes** (900 s).
+
+## What each kind of temporary credential can't do
+
+| Credentials from | Restrictions |
+|---|---|
+| `GetSessionToken` | Cannot call **IAM** APIs unless MFA was included; cannot call STS except `AssumeRole` and `GetCallerIdentity` |
+| `GetFederationToken` | Cannot call **IAM** APIs; cannot call STS except `GetCallerIdentity` (so **no `AssumeRole`**) |
+| `AssumeRole*` | Limited to the role's permissions ∩ session policy; can assume other roles (role chaining, 1 h cap) |
 
 ## Exam traps
 
 - Temporary credentials are **not renewable** — re-call STS (SDKs refresh automatically; hand-rolled HTTP code must too).
 - `AssumeRoleWithSAML` / `AssumeRoleWithWebIdentity` **do not need AWS credentials** to call — that is the point of federation.
 - `GetFederationToken` credentials are limited to the **intersection** of the calling IAM user's permissions and the session policy — they can never exceed the caller, and they **cannot be used to assume another role**.
-- **Root user cannot** use `AssumeRole` inter-account the way an IAM identity can — use an IAM user/role; and never use root access keys at all.
+- **Root user credentials cannot call `AssumeRole`** at all — it must be called by an IAM user or role (and root should have no access keys anyway).
+- A trust policy with `Principal: arn:aws:iam::<account>:root` does **not** mean "only the root user": it trusts the **whole account**, delegating to that account's IAM policies who may actually call `sts:AssumeRole`.
 - Cross-account questions require **both** the trust policy and the caller's identity permission — forgetting one is the standard wrong answer.
 - IAM Identity Center is a **front-end for workforce SSO** that uses STS underneath — not a replacement API call.
 - The **`ASIA` prefix** on an access key ID tells you it is temporary; `AKIA` means a long-term IAM user key (likely to be flagged in a "stolen credentials" question).
@@ -104,7 +115,7 @@ Key knobs and traps:
 
 | Question phrasing | Answer |
 |---|---|
-| "Give an on-premises app temporary AWS credentials without storing keys" | `AssumeRole` (or IAM Identity Center for humans) |
+| "Give an on-premises server/app temporary AWS credentials without storing long-term keys" | **IAM Roles Anywhere** (X.509 certificate from your PKI → `CreateSession` → role credentials); for humans, **IAM Identity Center** |
 | "Third-party vendor accesses our account; prevent confused deputy" | `AssumeRole` + **`sts:ExternalId`** |
 | "Employees sign in with corporate AD and get AWS console access" | **SAML 2.0** (`AssumeRoleWithSAML`) / **IAM Identity Center** |
 | "Mobile app users authenticate with Google and upload to S3" | **Cognito Identity Pools** (`AssumeRoleWithWebIdentity`) |

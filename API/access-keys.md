@@ -32,7 +32,8 @@ An access key is a set of credentials used for **programmatic access only** (CLI
 - A user can have at most **2 active access keys** at a time (create a second, migrate, then deactivate/delete the first — that *is* the zero-downtime rotation procedure).
 - The secret access key is displayed **only at creation**. Lost it? You cannot recover it — deactivate the key and create a new one.
 - States: `Active` → `Inactive` (deactivated keys still count toward the 2-key limit) → deleted. **Deactivation is instant revocation** — the old key stops working immediately even though the application still has it.
-- Root account can also have access keys — **best practice: root must have ZERO access keys**; use the root account only for tasks that genuinely require it (creating the first IAM user, closing the account, some billing/support actions).
+- Root account can also have access keys — **best practice: root must have ZERO access keys**; use the root user only for the tasks that genuinely require it: changing account settings (name, email, root password), **closing the account**, changing the **Support plan**, restoring permissions of a locked-out IAM admin, enabling **S3 MFA Delete**, fixing an S3 bucket policy that denies every principal, signing up for GovCloud. Day-to-day admin (including creating IAM users) is done with an IAM/Identity Center admin.
+- **Is a key still used?** `aws iam get-access-key-last-used` shows when, where (region) and with which service a key was last used; the **IAM credential report** lists every user's keys, their age and last use — the basis for deleting stale keys.
 
 ## Best practices (the "secure default" list)
 
@@ -65,7 +66,8 @@ An access key is a set of credentials used for **programmatic access only** (CLI
 | Root account alert / "someone used root credentials" | Root should have **no access keys**; add CloudTrail→CloudWatch alarm on root usage; move work to IAM users/roles |
 | Users repeatedly share/leak long-term credentials for human access | **IAM Identity Center (SSO)** + temporary sessions instead of IAM user keys |
 | Enforce that API calls come only from MFA-verified sessions | IAM policy condition `aws:MultiFactorAuthPresent` (optionally combined with an SCP) |
-| Find IAM users with stale (>90 days) keys | **AWS Config** rule `access-keys-rotated` |
+| Find IAM users with stale (>90 days) keys | **AWS Config** rule `access-keys-rotated`, or the **IAM credential report** |
+| On-premises server needs AWS API access without long-term keys | **IAM Roles Anywhere** (X.509 certificate → temporary role credentials) |
 | Credentials used from an unusual country/IP | **GuardDuty** credential anomalies → then revoke the key |
 
 ## Quick commands
@@ -76,6 +78,13 @@ aws sts get-caller-identity
 
 # List a user's access keys and their status/age
 aws iam list-access-keys --user-name alice
+
+# When/where was a key last used?
+aws iam get-access-key-last-used --access-key-id AKIA...
+
+# Credential report (CSV, base64-encoded) for every user in the account
+aws iam generate-credential-report
+aws iam get-credential-report --query Content --output text | base64 --decode
 
 # Rotate: create a second key, then deactivate and delete the old one
 aws iam create-access-key --user-name alice

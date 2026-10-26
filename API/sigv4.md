@@ -2,6 +2,8 @@
 
 Exam notes on how every AWS API request is **authenticated**: what is signed, what travels over the wire, and the numbers/traps that show up in SAA questions.
 
+> **SAA-C03 depth:** you will not compute a signature on the exam. What gets asked is the *consequences*: the secret key never travels, signatures are scoped and expire, and **S3 presigned URLs** (their limits, their bearer-token nature, CloudFront signed URLs as the alternative). The signing algorithm itself is more DVA-C02 material.
+
 ## What SigV4 is and why it exists
 
 **AWS Signature Version 4** is the protocol that authenticates requests to AWS APIs. The client signs the request with its credentials; AWS recomputes the signature and compares.
@@ -62,7 +64,7 @@ A SigV4 presigned URL carries `X-Amz-Algorithm`, `X-Amz-Credential`, `X-Amz-Date
 
 ## Temporary credentials
 
-- Add the **session token** to the request (`X-Amz-Security-Token` header/query parameter) and include it in `SignedHeaders` — missing it produces auth errors even with correct keys.
+- Send the **session token** with the request (`X-Amz-Security-Token` header or query parameter) — missing it produces `InvalidClientTokenId` / `SignatureDoesNotMatch` errors even with a correct key pair. Most services expect it to be part of what is signed; the SDKs handle the per-service detail.
 - Presigned URLs created with temporary credentials inherit the **session's** lifetime (AssumeRole default 1 h, EC2 instance profile ~6 h) — the "URL expired early" FAQ in a nutshell.
 
 ## Payload signing
@@ -88,7 +90,7 @@ A SigV4 presigned URL carries `X-Amz-Algorithm`, `X-Amz-Credential`, `X-Amz-Date
 - **Signature is scoped** to date/region/service — a valid signature cannot be replayed against another region or service.
 - **5-minute window** for header-signed requests; presigned URLs use `X-Amz-Expires` instead.
 - **Presigned URL ≠ CloudFront signed URL**: S3 presigned URLs use SigV4 (access key + secret); **CloudFront** signed URLs/cookies use **CloudFront key groups (RSA)**. For private CloudFront content, the answer is CloudFront signed URLs/cookies, not an S3 presigned URL.
-- **SigV4 vs SigV2**: SigV2 is legacy (and unsupported in some regions); SigV4 is the default. Presigned SigV2 URLs support only MD5 checksums, SigV4 supports the modern checksum algorithms.
+- **SigV4 vs SigV2**: SigV2 is deprecated — regions launched after 2014 never supported it, and S3 does not accept SigV2 for buckets created after June 24, 2020. SigV4 is what every current SDK and the CLI use.
 - **`--no-sign-request`** means *anonymous*, not "unsigned payload" — it only works on public resources.
 - Presigned URLs are **bearer tokens**: whoever has the link has the access until expiry — never put one in a public repo or log.
 - **S3 Multi-Region Access Points** automatically use **SigV4a** in SDK/CLI — you don't hand-select it.
