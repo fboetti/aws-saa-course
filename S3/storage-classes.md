@@ -121,17 +121,16 @@ The benchmark class; everything else is a trade-off against it.
 "The fast one — a different bucket type entirely."
 
 - **Durability**: 11 nines. **Availability**: 99.95% (single-AZ, but priced and engineered for it). **Redundancy**: multiple devices inside the **one AZ you choose** — pairs with compute in the same AZ for data locality.
-- **Retrieval time**: **single-digit milliseconds, consistently** (up to 10× faster than Standard's typical 20–100 ms first byte). Requires **[directory buckets](bucket-types.md)** — a true directory namespace, different API/endpoint (`<bucket>.s3.<region>.amazonaws.com`), virtual-hosted style only.
-- **Throughput / scalability**: purpose-built for sustained high request rates with *predictable* latency (Standard's strength is scale, Express's is *consistency*); supports `RenameObject`, and the only class where AWS advertises 50–85% cheaper requests.
+- **Retrieval time**: **single-digit milliseconds, consistently** (up to 10× faster than Standard's typical 20–100 ms first byte). Requires **[directory buckets](bucket-types.md)** — a true directory namespace with **zonal endpoints** (`<bucket>--<az-id>--x-s3.s3express-<az-id>.<region>.amazonaws.com`), virtual-hosted style only, session-based auth (`CreateSession`).
+- **Throughput / scalability**: purpose-built for sustained high request rates with *predictable* latency (Standard's strength is scale, Express's is *consistency*); supports `RenameObject`, and its request prices are far below Standard's (storage is far above).
 - **Use cases**: latency-sensitive workloads — real-time analytics, ML training/inference, ad-tech bidding, financial trading, interactive dashboards, pick-heavy pipelines.
 - **Pricing**: storage **$0.11/GB-month** (~5× Standard — you pay for speed), requests **$0.00113/1k writes, $0.00003/1k reads** (after the April 2025 cut) plus a small per-GB data component (≈$0.0032 written, ≈$0.0006 read). No minimums, no retrieval fee, no lifecycle transitions (a directory bucket only holds Express objects).
 
 ## 6. S3 Glacier Instant Retrieval
 
-"Archive pricing, Standard access."
-Rarely access data (once per quarter) that needs immediate access.
+"Archive pricing, Standard access." For data read rarely (about once per quarter) that must still be available immediately.
 
-IS NOT A SEPARATE SERVICE and DOES NOT REQUIRE A VAULT.
+> Like the other two Glacier classes, this is an **S3 storage class**, not a separate service: objects live in your normal bucket, no vault required.
 
 - **Durability**: 11 nines. **Availability**: 99.9%. **Redundancy**: **≥3 AZs** — same protection as Standard.
 - **Retrieval time**: **milliseconds** — no restore needed, the object is immediately readable, but each GB read costs **$0.03**.
@@ -154,9 +153,7 @@ IS NOT A SEPARATE SERVICE and DOES NOT REQUIRE A VAULT.
   Restore requests are billed per 1,000 (bulk restores: requests free too). The restored **copy is stored at S3 Standard rates** for the duration you pick, on top of the still-charged archive storage.
 - **Throughput / scalability**: bulk restores are throughput-optimized and free — the standard pattern for large backfills. For guaranteed fast access, buy **provisioned capacity units** (≥3 expedited retrievals every 5 min, up to **150 MB/s** of retrieval throughput each, per month).
 - **Use cases**: archives accessed **once or twice a year** where retrieval sometimes must happen in minutes — backups, log archives, research data, DR copies.
-- **Pricing**: **$0.0036/GB-month** + write requests **$0.03/1k** (10× Standard — design for *few, large* objects) + free bulk retrieval / paid expedited & standard + transition-in **$0.03/1k**. Minimum duration **90 days**; no object minimum, but the **40 KB per-object metadata** overhead (8 KB Standard rate + 32 KB FR rate). By this, you should store FEWER BUT LARGER files, instead a lot of smaller ones.
-
-IS NOT A SEPARATE SERVICE and DOES NOT REQUIRE A VAULT.
+- **Pricing**: **$0.0036/GB-month** + write requests **$0.03/1k** (10× Standard — design for *few, large* objects) + free bulk retrieval / paid expedited & standard + transition-in **$0.03/1k**. Minimum duration **90 days**; no object minimum, but the **40 KB per-object metadata** overhead (8 KB Standard rate + 32 KB FR rate). Because of the per-object overhead and request prices, archive **fewer, larger objects** (e.g. tar/zip many small files together) rather than millions of small ones.
 
 ## 8. S3 Glacier Deep Archive
 
@@ -168,9 +165,7 @@ IS NOT A SEPARATE SERVICE and DOES NOT REQUIRE A VAULT.
 - **Use cases**: data retained **7–10+ years**, regulatory/compliance retention, records accessed **less than once a year**, tape-library archives migrating off magnetic tape.
 - **Pricing**: **$0.00099/GB-month** (≈$1/TB/month — 23× cheaper than Standard) + write requests **$0.05/1k** (the most expensive in S3) + reads $0.0004/1k after restore + transition-in **$0.05/1k** (10M objects → **$500 just to move them in**). Minimum duration **180 days** — deleting early still bills the pro-rated remainder; 40 KB metadata overhead like Glacier FR.
 
-IS NOT A SEPARATE SERVICE and DOES NOT REQUIRE A VAULT.
-
-> **Lineage — the old S3 Glacier vault system**: Flexible Retrieval and Deep Archive descend from **Amazon S3 Glacier** (launched 2012), a *separate* service whose containers were **vaults** — not buckets — with their own API, vault access policies and **Vault Lock** (WORM), where every upload was an *archive* that stayed unreadable until restored. AWS folded that model into S3 as storage classes (Deep Archive in 2018, plus the class simply called "S3 Glacier"), then in the **November 2021 reorganization** renamed "S3 Glacier" to **S3 Glacier Flexible Retrieval**, launched **Glacier Instant Retrieval** alongside it, and kept the legacy vault service alive as **Amazon S3 Glacier Vault Archive** — still a distinct service, *not* an S3 storage class. The DNA shows in both classes: restore-before-read, the **expedited/standard/bulk** tiers and per-archive billing. Exam hint: "vault" wording (vaults, Vault Lock, vault access policies) points at **Glacier Vault Archive**, while Flexible Retrieval and Deep Archive are ordinary S3 objects in your bucket that merely need a `RestoreObject` first.
+> **Lineage — the old Glacier vault service**: Flexible Retrieval and Deep Archive descend from **Amazon Glacier** (launched 2012), a *separate* service whose containers were **vaults** — not buckets — with their own API, vault access policies and **Vault Lock** (WORM), where every upload was an *archive* that stayed unreadable until restored. AWS then exposed the same storage inside S3 as storage classes (the class called "S3 Glacier", plus Deep Archive in 2019), and in the **November 2021 reorganization** renamed the class to **S3 Glacier Flexible Retrieval** and launched **Glacier Instant Retrieval** alongside it. The original vault-based service still exists separately (AWS stopped onboarding new customers to it in 2025). The DNA shows in both classes: restore-before-read, the **expedited/standard/bulk** tiers and per-archive billing. Exam hint: "vault" wording (vaults, Vault Lock, vault access policies) points at the **standalone Glacier service**, while Flexible Retrieval and Deep Archive are ordinary S3 objects in your bucket that merely need a `RestoreObject` first.
 
 ---
 
@@ -185,12 +180,12 @@ IS NOT A SEPARATE SERVICE and DOES NOT REQUIRE A VAULT.
 7. **Monitoring** — Intelligent-Tiering only: $0.0025 per 1,000 objects/month (>128 KB).
 8. **Data transfer** — out to internet $0.09/GB after 100 GB/month free; free inbound; free to CloudFront; **VPC gateway endpoint** access to S3 is free of data-processing charges.
 
-**Worked example (why object count matters):** 10 M small objects (50 KB each) in Deep Archive ≈ 488 GB × $0.00099 ≈ **$0.48 storage**… but the 128 KB minimum bills 1.22 TB ≈ **$1.21**, the transition-in costs **$500**, and the writes cost **$500**. Fixed per-object costs, not bytes, dominate cold-storage migrations of tiny files.
+**Worked example (why object count matters):** 10 M small objects (50 KB each) in Deep Archive = 500 GB × $0.00099 ≈ **$0.50/month of storage**. On top of that, the 40 KB metadata overhead per object adds 80 GB at Standard rates (≈ $1.84) + 320 GB at Deep Archive rates (≈ $0.32) **every month** — already 4× the data itself. And getting them in costs **$500 once**, whether by lifecycle transition ($0.05 per 1k objects) or by direct PUT ($0.05 per 1k writes). Fixed per-object costs, not bytes, dominate cold-storage migrations of tiny files — which is also why lifecycle no longer transitions objects < 128 KB by default. Bundle small files into larger archives first.
 
 ## Throughput & Scalability (all classes)
 
 - S3 **automatically scales** request rates — no pre-provisioning, no quota requests.
-- Documented sustained rates **per prefix**: **3,500** PUT/COPY/POST/DELETE and **5,500** GET/HEAD requests/second. There is **no limit on the number of prefixes**, so horizontal scaling = generate ≥100 prefixes (e.g. random leading characters in keys).
+- Documented sustained rates **per prefix**: **3,500** PUT/COPY/POST/DELETE and **5,500** GET/HEAD requests/second. There is **no limit on the number of prefixes**, so throughput scales linearly with them: 10 prefixes read in parallel ≈ 55,000 GET/s. Key names no longer need random hashes (that was pre-2018 advice) — any distinct prefixes work, e.g. by date or tenant.
 - **Multipart upload**: required >5 GB, recommended >100 MB — parallel parts raise effective throughput and allow resume.
 - **Transfer Acceleration**: uploads via CloudFront edge locations (virtual-hosted endpoint, extra cost).
 - **Archive restores**: bulk = free & throughput-optimized; provisioned capacity units buy expedited throughput (150 MB/s each).

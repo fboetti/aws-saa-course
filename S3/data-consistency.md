@@ -23,7 +23,7 @@ This is the single most common "gotcha" in S3 exam questions: older material (an
 - **Delete → read/list**: a successful `DELETE` immediately removes the object from reads and listings.
 - **No stale answers**: reads never return a value from before a completed write — there is no window in which an older version can reappear.
 - **`LIST` is consistent**: `ListObjectsV2` results match the actual bucket state, including objects created or deleted just before the call.
-- **Applies to all S3 features**: versioning, replication, encryption, storage classes, Object Lock, event notifications, lifecycle — nothing needs to be reconfigured, and it costs nothing extra.
+- **Applies to every object in the bucket**, whatever its storage class, encryption, versioning or Object Lock settings — nothing needs to be reconfigured, and it costs nothing extra. Features that copy or report data *elsewhere* (replication, notifications, Inventory) are the exceptions listed below.
 - **Applies across the region**: consistency is guaranteed across all Availability Zones of the bucket's region, for every client (console, CLI, SDK, applications).
 
 ## What is *still* eventually consistent (the nuance)

@@ -8,7 +8,11 @@
 
  ## Overview
 
- This template provisions an S3 bucket (`pulumi_aws.s3.BucketV2`) in your AWS account and exports its ID as an output. It’s an ideal starting point when:
+ This program provisions an S3 bucket (`pulumi_aws.s3.Bucket` — with `pulumi-aws` v7 this is the current resource; `BucketV2` from v6 is deprecated) and exports its ID as an output.
+
+ The string passed to `s3.Bucket(...)` is the **logical name**. Pulumi *auto-names* the real bucket by appending a random suffix (e.g. `my-bucket-with-iac-pulumi-fboetti-1a2b3c4`), which keeps names globally unique across stacks; pass `bucket="..."` to force an exact name.
+
+ It’s an ideal starting point when:
   - You want to learn Pulumi with AWS in Python.
   - You need a barebones S3 bucket deployment to build upon.
   - You prefer a minimal template without extra dependencies.
@@ -17,36 +21,40 @@
 
  - An AWS account with permissions to create S3 buckets.
  - AWS credentials configured in your environment (for example via AWS CLI or environment variables).
- - Python 3.6 or later installed.
+ - Python 3.9 or later installed.
  - Pulumi CLI already installed and logged in.
 
  ## Getting Started
 
- 1. Generate a new project from this template:
+ The project already exists in this repo (it was generated with `pulumi new aws-python`).
+
+ 1. Change into the project directory and install dependencies:
     ```bash
-    pulumi new aws-python
+    cd S3/iac/pulumi
+    python3 -m venv venv && source venv/bin/activate
+    pip install -r requirements.txt
     ```
- 2. Follow the prompts to set your project name and AWS region (default: `us-east-1`).
- 3. Change into your project directory:
+ 2. Create a stack and set the region:
     ```bash
-    cd <project-name>
+    pulumi stack init dev
+    pulumi config set aws:region eu-north-1
     ```
- 4. Preview the planned changes:
+ 3. Preview the planned changes:
     ```bash
     pulumi preview
     ```
- 5. Deploy the stack:
+ 4. Deploy the stack:
     ```bash
     pulumi up
     ```
- 6. Tear down when finished:
+ 5. Tear down when finished:
     ```bash
     pulumi destroy
     ```
 
  ## Project Layout
 
- After running `pulumi new`, your directory will look like:
+ The directory looks like:
  ```
  ├── __main__.py         # Entry point of the Pulumi program
  ├── Pulumi.yaml         # Project metadata and template configuration

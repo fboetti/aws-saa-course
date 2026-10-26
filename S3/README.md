@@ -20,9 +20,9 @@ Key characteristics:
 | Concept | Details |
 |---|---|
 | **Bucket** | Container for objects. Must follow strict, **globally unique** naming rules (they become part of a public DNS name — see [Bucket Naming Rules](#bucket-naming-rules)). Cannot be renamed after creation. |
-| **Object** | The unit of storage: data + metadata + key. Max object size is **5 TB**. Objects are the **data payload**; buckets are the infrastructure around them — see the [Object Overview](objects.md). |
-| **Key** | The full path/name of the object, e.g. `photos/2026/cat.png`. Keys can contain slashes to simulate folders, but S3 has no real hierarchy. |
-| **Version ID** | If versioning is enabled, every object gets a unique version ID; "folders" and current versions coexist. |
+| **Object** | The unit of storage: data + metadata + key. Max object size is **5 TB** in the exam material (raised to **50 TB** in December 2025). Objects are the **data payload**; buckets are the infrastructure around them — see the [Object Overview](objects.md). |
+| **Key** | The full path/name of the object, e.g. `photos/2026/cat.png` (max 1,024 bytes). Keys can contain slashes to simulate folders, but S3 has no real hierarchy. |
+| **Version ID** | If versioning is enabled, every new write gets a unique version ID; objects that existed before versioning was enabled have version ID `null`. |
 | **Metadata** | Custom key/value pairs set on upload, plus system metadata (content type, ETag, last modified). |
 
 ## Bucket Naming Rules
@@ -33,16 +33,18 @@ The full rules (allowed characters, reserved prefixes/suffixes, IP-address and a
 
 ## Bucket Types
 
-S3 has **two types of buckets**:
+For the exam, two bucket types matter:
 
 - **General purpose buckets** — the original type, with a *flat* namespace. What the console shows as "folders" are just key prefixes: a folder you create is a real **0-byte object** whose key ends with `/`, and "moving" an object into a folder only changes its **key** (S3 implements it as copy + delete — no data relocation in a hierarchy, because there is none).
 - **Directory buckets** — introduced in 2023 together with the **S3 Express One Zone** storage class: a true hierarchical (directory) namespace in a single AZ, with consistent single-digit millisecond latency.
+
+Newer, specialized types also exist — **table buckets** (S3 Tables, Apache Iceberg tables for analytics, Dec 2024) and **vector buckets** (S3 Vectors, for embeddings/AI search, 2025) — but they postdate the SAA-C03 content.
 
 The full comparison (names, supported features, endpoints) is in a dedicated document: **[Bucket Types](bucket-types.md)**.
 
 ## Storage Classes
 
-S3 offers several storage classes to trade cost against access speed (trade Retrieval Time, Accessibility, Durability). All except **Glacier Instant Retrieval** are for data that is *infrequently* accessed:
+S3 offers several storage classes that trade **storage price** against **availability, retrieval time and access cost** — durability is the same 11 nines everywhere. Standard, Intelligent-Tiering and Express One Zone suit frequently accessed data; the IA and Glacier classes are for data read rarely:
 
 | Storage Class | Retrieval time | Use case |
 |---|---|---|
@@ -55,7 +57,7 @@ S3 offers several storage classes to trade cost against access speed (trade Retr
 | **S3 Glacier Flexible Retrieval** (formerly Glacier) | minutes to hours | Archive with rarely needed retrieval; free bulk restores of 3–5 hours |
 | **S3 Glacier Deep Archive** | hours | Longest-term retention, cheapest storage; 12–48 hours retrieval |
 
-**Frequent vs. infrequent access** is decided by how often you expect to read the data; **retrieval time** is decided by how quickly you need it back. You can also add **provisioned throughput** (capacity units) when you need to sustain high GET/PUT rates beyond your account's baseline.
+**Frequent vs. infrequent access** is decided by how often you expect to read the data; **retrieval time** is decided by how quickly you need it back. Request throughput needs no provisioning — S3 scales automatically per prefix. The only "provisioned capacity" in S3 is for **Glacier Flexible Retrieval expedited restores**, to guarantee they are accepted.
 
 The full deep dive — durability, availability, data redundancy, retrieval times, throughput/scalability, use cases and pricing (storage, requests, retrieval fees, minimum durations) for **every** storage class — is in **[Storage Classes Deep Dive](storage-classes.md)**.
 
@@ -65,8 +67,8 @@ S3 Outposts has its own storage class.
 
 ### Versioning
 
-- Keeps every version of every object (including an edit marker `null` for the first upload).
-- States: **Off → Enabled** (once suspended, it can only be *suspended*, never fully off again).
+- Keeps every version of every object; objects uploaded before versioning was enabled keep version ID `null`.
+- States: **Unversioned** (default) → **Enabled** ↔ **Suspended**. Once enabled, a bucket can never return to unversioned — only be suspended, which stops creating new versions but keeps the existing ones.
 - Deleting a versioned object just adds a **delete marker**; the object is recoverable by removing the marker or deleting a specific version.
 - **MFA Delete** can be enabled so that changing versioning or permanently deleting versions requires an MFA device — extra protection against accidental/malicious deletion.
 - Versioning is a prerequisite for **Cross-Region Replication (CRR)** and **Same-Region Replication (SRR)**.
@@ -92,12 +94,13 @@ The full treatment — action types, minimum storage durations, the 128 KB trans
 
 ### Encryption
 
-S3 supports four encryption options:
+S3 supports four server-side options plus client-side encryption:
 
-1. **SSE-S3** — Amazon S3 manages the keys (`aws:kms` not needed); each object encrypted with a unique key, keys themselves encrypted. Use header `x-amz-server-side-encryption: AES256`.
-2. **SSE-KMS** — Keys managed by AWS **KMS** (AWS-managed or your own CMK); gives you key usage audit trail via CloudTrail and per-key permissions.
-3. **SSE-C** — You supply and manage the keys; AWS stores and uses them but never manages them for you.
-4. **Client-side encryption** — You encrypt the data *before* uploading it with your own library and keys; S3 only ever stores ciphertext.
+1. **SSE-S3** — Amazon S3 manages the keys; each object is encrypted with a unique key (AES-256), itself encrypted with a regularly rotated root key. Header `x-amz-server-side-encryption: AES256`. The default.
+2. **SSE-KMS** — keys in AWS **KMS** (the AWS managed key `aws/s3` or your own **customer managed key**); adds a CloudTrail audit trail of key usage and per-key permissions. Header `aws:kms`. Enable **S3 Bucket Keys** to cut KMS request costs.
+3. **DSSE-KMS** — *dual-layer* server-side encryption: S3 applies **two independent layers** of AES-256 encryption with KMS keys, for standards that require two layers (e.g. CNSSP 15). Header `aws:kms:dsse`.
+4. **SSE-C** — you supply the key with **every request** (HTTPS only); S3 uses it to encrypt/decrypt and then discards it — it stores only a salted HMAC to validate future requests. Lose the key, lose the data.
+5. **Client-side encryption** — you encrypt the data *before* uploading it with your own library and keys; S3 only ever stores ciphertext.
 
 You can enforce encryption with a **bucket policy** that rejects any `PutObject` without a server-side encryption header, or enable **"Default encryption"** on the bucket so every new object is encrypted automatically. *(Note: since January 2023 S3 encrypts all new objects by default with SSE-S3 unless otherwise specified.)*
 
@@ -111,13 +114,14 @@ Multiple layers, used together:
 - **Block Public Access (BPA)** — four safety settings (block public ACLs, ignore public ACLs, block public bucket policies, restrict public bucket policies) that lock a bucket down; enabled by default on new buckets.
 - **Pre-signed URLs** — temporary, signed URLs you generate with your credentials to grant time-limited access to a specific object without making it public.
 - **Access Points** — named endpoints with their own policies, useful when many applications share one bucket.
-- **Object Lambda Access Points** — run a Lambda on the *output* of GET/HEAD/LIST requests, so each consumer gets a transformed view (anonymized, filtered, resized) of the same stored object — no derivative copies.
+- **Object Lambda Access Points** — run a Lambda on the *output* of GET/HEAD/LIST requests, so each consumer gets a transformed view (anonymized, filtered, resized) of the same stored object — no derivative copies. (Still a valid exam answer, though AWS closed the feature to new customers in 2025.)
 
 ### Static Website Hosting
 
 - S3 can serve a static website directly: set an **index document** (e.g. `index.html`) and optional **error document**.
 - The website endpoint is public HTTP (not HTTPS on the bucket endpoint itself — for HTTPS, put **CloudFront** in front).
-- Combines with bucket policies to allow `s3:GetObject` for everyone.
+- Making it public takes two steps: **turn off Block Public Access** for the bucket, then add a bucket policy allowing `s3:GetObject` to everyone. The better pattern keeps the bucket private behind **CloudFront + Origin Access Control (OAC)**.
+- Website endpoint format: `http://<bucket>.s3-website-<region>.amazonaws.com` (or `s3-website.<region>` in newer regions) — different from the REST endpoint, and it returns HTML error pages and supports redirects.
 - Note: **Cross-Origin Resource Sharing (CORS)** must be configured on the bucket if the site loads its assets from a different domain.
 
 ### Event Notifications
@@ -135,7 +139,7 @@ Events include `ObjectCreated`, `ObjectRemoved`, `ObjectRestore` (Glacier), etc.
 
 **Mountpoint for Amazon S3** is an open-source file client (Linux, FUSE + AWS CRT) that mounts a bucket as a **local file system**, translating file operations into S3 API calls — so legacy/file-based applications get S3's elastic storage and throughput through a file interface.
 
-- Reads: **sequential and random**, files up to **50 TB**; writes: **create new files sequentially only** — it **cannot modify existing files** or delete directories, and there are **no symlinks, no file locking, no full POSIX**.
+- Reads: **sequential and random**, up to the maximum object size; writes: **create new files sequentially only** — it **cannot modify existing files** or delete directories, and there are **no symlinks, no file locking, no full POSIX**.
 - Designed for **read-heavy, many-instance workloads**: ML training, genomics, rendering, autonomous-vehicle simulation, ETL over TB–PB data lakes; repeated reads can be **cached** on instance storage/memory/EBS.
 - Each file = one object key (`Data/x.csv` → directory `Data`, file `x.csv`). No filesystem charge — you pay normal **S3 requests + data transfer** (Mountpoint itself is free/open source).
 - **Not a shared file system**: many readers + one sequential writer is the sweet spot; if you need locking/POSIX permissions AWS points you to **FSx for Lustre with a data repository association** to the bucket.
@@ -167,16 +171,17 @@ With **Requester Pays** buckets, the **person who downloads the data pays for it
 - Not supported: SOAP, BitTorrent, and using the bucket as (or logging to) an end-user logging target.
 - **Glacier restores**: requester pays only the restore *request*; the **bucket owner** pays the retrieval charges.
 
-**Exam mapping:** "share a large dataset; consumers (not the owner) should pay download costs" → **Requester Pays**. "Public/anonymous website must stay free for visitors" → **not** Requester Pays (use CloudFront + OAI/OAC for free egress patterns instead). "Consumers need only *temporary, fine-grained* access" → [pre-signed URLs](#access-control) rather than a billing switch.
+**Exam mapping:** "share a large dataset; consumers (not the owner) should pay download costs" → **Requester Pays**. "Public/anonymous website must stay free for visitors" → **not** Requester Pays (the owner pays; **CloudFront + OAC** in front of the bucket lowers the cost, since S3 → CloudFront transfer is free and CloudFront egress is cheaper and cached). "Consumers need only *temporary, fine-grained* access" → [pre-signed URLs](#access-control) rather than a billing switch.
 
 ### Other Notable Features
 
-- **Multipart upload** — required for files >5 GB, recommended above ~100 MB; parallelizes upload and allows resuming.
-- **Transfer acceleration** — upload over CloudFront edge locations for long-distance transfers.
+- **Multipart upload** — required for files >5 GB (the single-PUT limit), recommended above ~100 MB; up to **10,000 parts** of 5 MB–5 GB each, uploaded in parallel and retried individually. Incomplete uploads keep billing until aborted (lifecycle rule).
+- **Byte-range fetches** — the read-side counterpart: GET ranges of an object in parallel to speed up downloads or read only part of a file.
+- **Transfer Acceleration** — uploads enter the AWS network at the nearest **CloudFront edge location** and ride the AWS backbone to the bucket; for long-distance transfers, extra cost, endpoint `<bucket>.s3-accelerate.amazonaws.com`.
 - **S3 Batch Operations** — apply an action (copy, tag, restore, modify ACLs) to billions of objects with a single job.
 - **S3 Inventory** — periodic list of all objects and metadata for audit/analysis.
 - **Requester Pays** — the requester (not the bucket owner) pays data transfer and request costs — see [Requester Pays](#requester-pays).
-- **Object Lock** — WORM (write-once-read-many) protection for compliance; cannot be deleted or overwritten for a retention period. Requires versioning.
+- **Object Lock** — WORM (write-once-read-many) protection for compliance; cannot be deleted or overwritten for a retention period. Requires versioning (and can now be enabled on existing buckets too).
 - **Tagging** — key/value tags on buckets and objects, useful for cost allocation and lifecycle policies.
 
 ## Limits and Quotas (exam-relevant)
@@ -185,8 +190,8 @@ The full restrictions list lives in **[Bucket Restrictions and Limitations](buck
 
 - Bucket names: **globally unique**, with strict naming rules — see [Bucket Naming Rules](bucket-naming-rules.md).
 - **Single-region by default** — a bucket lives in one region; cross-region access is just cross-region data transfer (or use replication/Cross-Region Access Points).
-- Maximum object size: **5 TB**; multipart upload recommended above 100 MB (required above 5 GB).
-- **100 buckets** per account by default, raisable to 1,000 on request.
+- Maximum object size: **5 TB** (exam number; 50 TB since Dec 2025); single PUT max **5 GB**; multipart upload recommended above 100 MB (required above 5 GB).
+- **10,000 general purpose buckets** per account by default since Nov 2024, raisable up to 1 million (older material and exam questions say **100**, raisable to 1,000).
 - Deleting a bucket requires it to be **empty** first (no objects or versions).
 - Versioning, Object Lock and replication need to be considered *before* uploading data — many settings can't be applied retroactively in a meaningful way.
 
@@ -195,7 +200,7 @@ The full restrictions list lives in **[Bucket Restrictions and Limitations](buck
 1. **Storage** — per GB-month, depends on storage class.
 2. **Requests** — per 1,000 PUT/GET/LIST/COPY requests (GET is cheaper than PUT).
 3. **Data transfer** — data transferred *out* to the internet (per GB), between regions, or out to CloudFront (often free).
-4. **Retrieval fees** — for Glacier classes (except Glacier IR) and Standard-IA/One Zone-IA.
+4. **Retrieval fees** — per GB read back from Standard-IA, One Zone-IA and all Glacier classes (Glacier IR included — $0.03/GB; only Flexible Retrieval *bulk* restores are free). Standard and Intelligent-Tiering have none.
 5. **Management features** — replication, inventory, analytics, etc.
 
 ## Security Checklist (SAA exam focus)
@@ -216,8 +221,11 @@ Hands-on material for this section lives alongside these notes:
 
 - `s3-bash-scripts/` — AWS CLI scripts exercising bucket operations.
 - `sdk/` — boto3 (Python SDK) examples.
-- `iac/pulumi/` — minimal S3 bucket provisioned with Pulumi (Python); see its [README](iac/pulumi/README.md).
-- `iac/cdk/` — the same infrastructure defined with AWS CDK (Python); see its [README](iac/cdk/README.md).
+- [`bucket-policy/`](bucket-policy/readme.md) — grant another IAM user access with a bucket policy.
+- [`metadata/`](metadata/readme.md) — upload an object with user-defined metadata.
+- [`encryption/`](encryption/readme.md) — server-side encryption with SSE-S3 and SSE-KMS.
+- [`encryption-client-side/`](encryption-client-side/readme.md) — encrypt locally, upload only ciphertext.
+- [`iac/`](iac/README.md) — the same bucket provisioned with CloudFormation, Terraform, Pulumi and AWS CDK.
 
 Companion theory docs, linked from this overview:
 

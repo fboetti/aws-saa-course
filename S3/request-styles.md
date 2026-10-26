@@ -48,10 +48,10 @@ The wildcard certificate AWS presents for the endpoint only covers **one** label
 So with **virtual hosted-style + HTTPS, bucket names must not contain dots**. Workarounds, in order of preference:
 
 1. Don't use dots in bucket names (or use hyphens instead).
-2. Serve the bucket under **your own domain** via a CNAME/alias to the virtual hosted-style endpoint, with a certificate for *your* domain.
+2. Put **CloudFront** in front of the bucket and serve it under your own domain with an ACM certificate — S3 itself cannot present a certificate for a custom domain.
 3. Path-style requests — but see the deprecation note below.
 
-This is also why **CNAME/custom-domain URLs** exist: `images.example.com` → `images.example.com.s3.us-west-2.amazonaws.com`, and the bucket name must exactly match the hostname you register.
+**Custom domain without CloudFront** works only over **HTTP**: a CNAME `images.example.com` → `images.example.com.s3.us-west-2.amazonaws.com` (or to the website endpoint), where the bucket name must exactly match the hostname. That is the one case where a dotted bucket name is *required* — and why HTTPS for it needs CloudFront.
 
 ### 3. Browsers and same-origin
 
@@ -124,9 +124,9 @@ from botocore.config import Config
 s3 = boto3.client("s3", config=Config(s3={"addressing_style": "virtual"}))
 ```
 
-- `virtual` — always virtual hosted-style (AWS default behavior in practice).
+- `virtual` — always virtual hosted-style.
 - `path` — always path-style (needed for IP/localhost endpoints and many S3-compatible services).
-- `auto` — virtual hosted-style, falling back to path-style when the endpoint can't carry a bucket subdomain (IP address, custom endpoint).
+- `auto` (the default) — virtual hosted-style, falling back to path-style when the bucket name isn't DNS-compatible or the endpoint can't carry a bucket subdomain (IP address, custom endpoint).
 
 ## Exam Takeaways
 

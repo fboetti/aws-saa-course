@@ -14,5 +14,5 @@ STACK_NAME="cfn-s3-sample"
 
 aws cloudformation deploy \
 --stack-name $STACK_NAME \
---template-file ./template.yaml \
+--template-file "${SCRIPT_DIR}/template.yaml" \
 --no-execute-changeset

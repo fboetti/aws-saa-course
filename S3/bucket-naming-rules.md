@@ -16,17 +16,21 @@ Since anyone in the world can request that URL, **bucket names must be unique ac
 - **Allowed characters**: lowercase letters (`a–z`), numbers (`0–9`), **dots** (`.`) and **hyphens** (`-`) only.
   - No uppercase letters (`A–Z`) — S3 forbids them.
   - No underscores (`_`), no spaces, no other special characters (slashes, `@`, `+`, etc.).
-  - If the name contains dots and you need HTTPS access with a custom domain, note that `*.s3.amazonaws.com` wildcard certificates don't cover dotted names — use a wildcard certificate of your own or path-style requests.
+  - Dots are allowed but discouraged: with virtual hosted-style HTTPS, the wildcard certificate `*.s3.<region>.amazonaws.com` covers only one DNS label, so `my.bucket.s3…` fails certificate validation. Dotted names are also unsupported by **Transfer Acceleration**. Use hyphens (see [Request Styles](request-styles.md)).
 - **Start and end**: must begin and end with a letter or number.
 - **No adjacent dots**: names like `my..bucket` are rejected (to avoid confusing certificate/URL parsing).
 - **Not an IP address**: names that look like `192.168.5.4` are rejected.
 - **Reserved prefixes** (cannot start with):
   - `xn--` — reserved for punycode-encoded names (IDN).
   - `sthree-` — reserved by AWS for its own use.
+  - `amzn-s3-demo-` — reserved for AWS documentation examples.
 - **Reserved suffixes** (cannot end with):
   - `-s3alias` — used for general purpose bucket *access point aliases*.
   - `--ol-s3` — used for S3 Object Lambda access point aliases.
-- **Immutable name**: a bucket cannot be renamed after creation, and after deletion its name can take up to **24 hours** (sometimes longer) to become available again.
+  - `.mrap` — used for Multi-Region Access Points.
+  - `--x-s3` — used for directory buckets (S3 Express One Zone).
+  - `--table-s3` — used for S3 Tables.
+- **Immutable name**: a bucket cannot be renamed after creation (to "rename", create a new bucket and copy the data), and after deletion its name can take some time to become available again — and **anyone** may grab it in the meantime, so don't delete buckets whose names you want to keep.
 
 ## Examples
 

@@ -11,16 +11,17 @@ S3 is AWS's **central data hub**: nearly every AWS service can *write objects to
 | "Visualize/query results for business users" | **Amazon QuickSight** |
 | "Query S3 from inside Redshift without copying data" | **Redshift Spectrum** (external schema) |
 | "ETL Hadoop/Spark jobs at scale over S3" | **Amazon EMR** (S3A connector) |
-| "Deliver streaming/near-real-time data into S3" | **Kinesis Data Firehose** |
+| "Deliver streaming/near-real-time data into S3" | **Amazon Data Firehose** (formerly Kinesis Data Firehose) |
 | "Do something whenever an object is created/deleted" | **Lambda / EventBridge** (event notifications) |
 | "Machine-learning training data / model artifacts" | **Amazon SageMaker** (S3 is the default input/output channel) |
 | "Classify/scan objects for PII or sensitive data" | **Amazon Macie** |
 | "Audit who read/wrote objects" | **CloudTrail data events** + S3 server access logging |
 | "Detect compromised/anomalous bucket activity" | **GuardDuty S3 Protection** |
+| "Scan newly uploaded objects for malware" | **GuardDuty Malware Protection for S3** |
 | "Back up the bucket itself, immutably" | **AWS Backup** (+ Vault Lock) |
 | "Load files from S3 into Redshift" | **Redshift COPY** command |
 | "Stream SaaS/CRM data into S3" | **Amazon AppFlow** |
-| "Serve objects globally through a CDN" | **CloudFront** (S3 origin, OAC/OAI) |
+| "Serve objects globally through a CDN" | **CloudFront** (S3 origin, **OAC**; OAI is the legacy option) |
 | "Let FTP/SFTP clients read/write a bucket" | **AWS Transfer Family** |
 
 ## Analytics and query layer
@@ -30,11 +31,11 @@ S3 is AWS's **central data hub**: nearly every AWS service can *write objects to
 - **Amazon EMR** (Hadoop/Spark/Hive) — uses **S3 as durable storage** (via the `s3a` connector) instead of HDFS: compute and storage scale independently, clusters can be ephemeral. Hive/Spark metadata in Glue/Hive Metastore.
 - **Amazon Redshift Spectrum** — `CREATE EXTERNAL SCHEMA` → query S3 **in place** (no `COPY` first), billed per byte scanned; combine external tables with internal Redshift tables.
 - **Amazon QuickSight** — dashboards on top of Athena/S3.
-- **S3 Select / Glacier Select** — push a SQL *expression* into a GET so **S3 filters the object server-side**: only matching bytes leave S3 (cheaper/faster partial reads of one object — different job from Athena, which queries across many).
+- **S3 Select / Glacier Select** — push a SQL *expression* into a GET so **S3 filters the object server-side**: only matching bytes leave S3 (cheaper/faster partial reads of one object — different job from Athena, which queries across many). AWS closed both to new customers in July 2024 and points to Athena instead, but they still appear in exam questions.
 
 ## Streaming and ingestion
 
-- **Kinesis Data Firehose** — the "load stream into S3" answer: buffers (e.g. 60 s–15 min), optionally **transforms with Lambda**, converts format (e.g. to Parquet) and delivers to S3 **near real time** — no consumers to manage.
+- **Amazon Data Firehose** (renamed from Kinesis Data Firehose in 2024) — the "load stream into S3" answer: buffers (e.g. 60 s–15 min), optionally **transforms with Lambda**, converts format (e.g. to Parquet) and delivers to S3 **near real time** — no consumers to manage.
 - **Kinesis Data Streams / IoT** — for custom consumers (e.g. Lambda) that write batches of objects.
 - **Amazon AppFlow** — pulls Salesforce/Zendesk/SaaS data into S3 (and pushes out), no glue code.
 - **AWS Database Migration Service (DMS)** — can use **S3 as a source or target**, handy for landing database extracts in the lake.
@@ -42,7 +43,8 @@ S3 is AWS's **central data hub**: nearly every AWS service can *write objects to
 
 ## Compute and event-driven processing
 
-- **Lambda + event notifications** (`ObjectCreated`, `ObjectRemoved`, `ObjectRestore`…) → **Object Lambda transforms**, thumbnail generation, validation, indexing pipelines. Events carry **object metadata, not the payload** (size limits apply), so Lambda fetches the data itself.
+- **Lambda + event notifications** (`ObjectCreated`, `ObjectRemoved`, `ObjectRestore`…) → thumbnail generation, validation, indexing pipelines. Events carry **object metadata (bucket, key, size), not the payload**, so Lambda fetches the data itself. Notifications filter only by **key prefix/suffix**; EventBridge adds richer filtering and many more targets.
+- **Object Lambda** is a different mechanism: it is not triggered by events but runs *synchronously on each GET* through an Object Lambda Access Point, transforming what the caller receives (see [Security](security.md#object-lambda-access-points)).
 - **ECS/EKS/EC2** read/write through the SDK; **Step Functions** orchestrates multi-step document pipelines over S3.
 
 ## Machine learning
@@ -55,13 +57,13 @@ S3 is AWS's **central data hub**: nearly every AWS service can *write objects to
 - **CloudTrail data events** — object-level logging (`GetObject`, `PutObject`): *who touched which object* (costly at high volume → usually on for sensitive buckets via advanced event selectors).
 - **S3 server access logging** — request-level logs for the bucket itself.
 - **Amazon Macie** — automated **sensitive-data discovery** (PII) across buckets.
-- **GuardDuty S3 Protection** — anomaly detection on CloudTrail data events for buckets.
+- **GuardDuty S3 Protection** — anomaly detection on CloudTrail data events for buckets; **GuardDuty Malware Protection for S3** scans newly uploaded objects and tags infected ones.
 - **AWS Config** rules (`s3-default-encryption-enabled`, public-access checks) + **IAM Access Analyzer** for sharing/public exposure.
 - **AWS Backup** — centralized, cross-account/cross-region backups of S3; **Vault Lock** gives WORM immutability (ransomware/compliance), complementing in-bucket [Object Lock](objects.md#object-locking-worm).
 
 ## Non-AWS / legacy interop (brief)
 
-- **CloudFront** fronts S3 for global delivery (free-ish origin traffic, HTTPS, caching, OAC/OBA).
+- **CloudFront** fronts S3 for global delivery: S3 → CloudFront transfer is free, adds HTTPS with your domain, caching, and **OAC** so the bucket stays private.
 - **AWS Transfer Family** speaks **SFTP/FTPS/FTP** to partners who can't do REST — the bucket stays the storage.
 - For S3-*compatible* third-party storage/clients (MinIO, rclone, custom endpoints) the same SDK/API works with a custom `endpoint` — see the [references](#references).
 
@@ -72,7 +74,7 @@ S3 is AWS's **central data hub**: nearly every AWS service can *write objects to
 - "Streaming landing zone with transformation, no infrastructure" → **Firehose (+ Lambda)**.
 - "Don't copy the data into Redshift" → **Spectrum**; "get it *into* Redshift" → **COPY**.
 - Event-driven → **S3 events to Lambda/EventBridge**; hybrid/legacy producers/consumers → **Storage Gateway, DataSync, Transfer Family, Snow** (covered elsewhere in the course).
-- "Who accessed this object?" → **CloudTrail data events** (not server access logs — those are bucket-request level).
+- "Who accessed this object?" → both log object-level requests. **CloudTrail data events** give the full IAM identity, near-real-time delivery and integration with CloudWatch/EventBridge/CloudTrail Lake (paid per event). **Server access logs** are free apart from storage, but best-effort and delayed (hours). For audit/alerting, pick CloudTrail; for cheap traffic analysis, access logs.
 
 ## References
 

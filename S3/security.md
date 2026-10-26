@@ -77,7 +77,7 @@ Key properties:
 | **Principals** | Any principal: the account's own identities, **another AWS account**, an AWS service (`Principal: { "Service": "cloudtrail.amazonaws.com" }`), or `*` (everyone = "public"). |
 | **Size limit** | Bucket policies are limited to **20 KB** (keep them for coarse, cross-account and deny rules). |
 | **Evaluation** | An explicit **`Deny` always wins** over any `Allow` (from any policy, anywhere). Otherwise: identity policy **OR** resource policy can allow; for **cross-account** access *both* the identity policy in the caller's account and the bucket policy must allow. |
-| **Conditions** | Rich keys: `aws:SecureTransport`, `aws:TLSVersion`, `aws:SourceIp`, `aws:SourceArn`/`aws:SourceAccount` (confused-deputy protection), `aws:PrincipalOrgID`, `aws:SourceVpc`/`aws:SourceVpce`, `s3:prefix`, `s3:x-amz-acl`, `s3:ResourceTag`/`aws:RequestTag`. |
+| **Conditions** | Rich keys: `aws:SecureTransport`, `aws:TLSVersion`, `aws:SourceIp`, `aws:SourceArn`/`aws:SourceAccount` (confused-deputy protection), `aws:PrincipalOrgID`, `aws:SourceVpc`/`aws:SourceVpce`, `s3:prefix`, `s3:x-amz-acl`, `s3:x-amz-server-side-encryption`, `s3:ExistingObjectTag/<key>`, `s3:RequestObjectTag/<key>`. |
 | **Not for** | Granting a *principal* broad rights — that's an IAM policy. Bucket policies say *what may happen to this resource*; IAM policies say *what this identity may do*. |
 
 Typical exam uses:
@@ -141,7 +141,7 @@ Why it matters for security:
 | **Restrict public buckets** | Ignores existing public bucket-policy statements: access to such buckets is limited to AWS service principals and authorized users **within the account**. |
 
 - Can be set **per bucket** and **per account**. **Account-level settings always win** — if the account blocks, you cannot re-enable it on an individual bucket.
-- New buckets get **all four enabled**; accounts created since April 2023 have the account-level settings on by default.
+- New buckets get **all four enabled** (since April 2023). Account-level BPA is a separate switch you turn on yourself (or enforce organization-wide).
 - "Public" here means a principal that is not an AWS-account principal (`Principal: *` combined with anonymous access, or ACL grantees `AllUsers`/`AuthenticatedUsers`).
 - It **does not** replace authorization: it only neutralizes *public* grants. Cross-account grants, VPC endpoint restrictions, IAM etc. still apply normally.
 - Turning BPA **off** is a deliberate act — the console warns you. For a static website you typically disable it *and* explicitly allow `s3:GetObject` for everyone — that's the intended exception.
@@ -169,14 +169,14 @@ Why it matters for security:
 
 An **S3 access point** is a **named endpoint with its own resource policy**, attached to a bucket. Instead of one bucket policy that must describe every application sharing the bucket, each application gets its own access point (and its own policy) pointing at the same bucket.
 
-- ARN format: `arn:aws:s3:us-east-1:111122223333:accesspoint/my-app` — requests use the access point hostname `my-app.s3.us-east-1.amazonaws.com`.
+- ARN format: `arn:aws:s3:us-east-1:111122223333:accesspoint/my-app` — requests go to `my-app-111122223333.s3-accesspoint.us-east-1.amazonaws.com`, or use the access point **alias** (`my-app-…-s3alias`) anywhere a bucket name is expected.
 - **Up to 10,000 access points per account per Region** — designed for many applications/teams on one bucket (the "bucket policy is too big / too coarse" problem).
 - Policies are attached to the access point ARN and can scope access to **prefixes/objects**, restrict by VPC, by principal, etc.
 - **Cross-account access point policies** are a common pattern: the *resource* side is expressed once via the access point; the caller still needs an identity policy naming the access point ARN.
 - **Network scope**: access points can be **internet-facing** or **VPC-only**. A **VPC-only access point** simply refuses requests that do not arrive from the VPC (or via its endpoint) — network-level restriction without any bucket-policy plumbing.
 - Access points inherit the bucket's **Block Public Access**; a public access point is impossible when BPA is on. They also support per-access-point BPA settings.
 - **Not for** the "single global endpoint" case: every access point is regional; a bucket policy is still needed for bucket-wide rules (e.g. deny non-TLS, deny deletes).
-- **Directory buckets** use a special flavour: **S3 Express Zone Mount access points** (mount an S3 Express filesystem e.g. for EFS/File Cache use cases).
+- **Directory buckets** support access points too (since 2025), with the same idea — per-application policies and network scope — scoped to the zonal bucket.
 - **S3 Multi-Region Access Points** give a *single* hostname fronting buckets in multiple regions, with cross-region replication underneath — for global applications (read locality / failover).
 
 **Exam mapping:** "many applications share one bucket with different permissions / policy is too large" → **access points**. "Global app, single endpoint across regions" → **Multi-Region Access Point**. "Bucket must only be reachable from the VPC" → VPC-only access point (or a gateway-endpoint `aws:SourceVpce` condition).
@@ -186,6 +186,8 @@ An **S3 access point** is a **named endpoint with its own resource policy**, att
 ## Object Lambda Access Points
 
 An **S3 Object Lambda Access Point** runs an **AWS Lambda function on the *output* of read requests**, so every caller receives a **transformed version of the object** while the stored object stays untouched.
+
+> AWS closed Object Lambda to new customers in 2025 (existing users keep it). It remains a valid SAA-C03 answer; in new designs the same effect is built with a Lambda/API Gateway or CloudFront function in front of S3.
 
 - It intercepts standard **GET, HEAD and LIST** requests made through it: S3 fetches the original object, invokes your Lambda, and the client receives what the Lambda returns. **Writes are not transformed**, and Object Lambda is **not supported on directory buckets**.
 - Built from three pieces: the **Object Lambda Access Point** itself, a normal **supporting S3 access point** (the underlying data source), and the **Lambda function + configuration** saying which actions (`GetObject`, `HeadObject`, `ListObjects…`) it applies to.
@@ -306,7 +308,7 @@ Protecting data **while it moves** — i.e. TLS/SSL between client and S3.
 - The **static website endpoint is HTTP only** → for HTTPS use **CloudFront** (which also gives you TLS 1.2+ minimum protocol version, custom certs and OAC).
 - Data also stays encrypted **inside** the AWS network between AZs/devices, but that's at-rest/in-network encryption managed by S3.
 - VPC endpoints/PrivateLink/Direct Connect reduce exposure to internet-path attacks but **do not replace TLS** — encrypt anyway (defense in depth; a compromised instance could otherwise sniff).
-- Combined with **S3 Server Access Logging** / **CloudTrail data events** (`aws:SecureTransport` appears in event records) you can *audit* whether requests used HTTPS.
+- Combined with **CloudTrail data events** (the `tlsDetails` field records the TLS version and cipher) or **S3 server access logs** (TLS version field) you can *audit* whether requests used HTTPS.
 
 ---
 
@@ -314,25 +316,24 @@ Protecting data **while it moves** — i.e. TLS/SSL between client and S3.
 
 **Server-side encryption (SSE)** = S3 encrypts data **at rest on its own infrastructure**, transparently; you never handle plaintext after upload. Since **January 2023 every new object is encrypted by default** (SSE-S3) even if you specify nothing.
 
-| | **SSE-S3** | **SSE-KMS** | **SSE-C** |
-|---|---|---|---|
-| Key management | **Amazon S3** | **AWS KMS** (AWS-managed key `aws/s3` or **your own CMK**) | **You** (bring your own key, sent with each request) |
-| Header | `x-amz-server-side-encryption: AES256` | `x-amz-server-side-encryption: aws:kms` (+ `x-amz-server-side-encryption-kms-key-id`) | `x-amz-server-side-encryption-customer-algorithm: AES256` + key + SHA-256 of key |
-| Key storage by AWS | Yes (keys are rotated/managed for you) | KMS holds the key material | **Never** — key is used in memory only |
-| Auditing | Standard S3 logging | **CloudTrail key-usage events**, per-key IAM/kms policy granularity, key disable & scheduled deletion | None (S3 has no key record) |
-| Extra cost | Included | **KMS requests per PUT/GET** (mitigate with **S3 Bucket Keys**) | Included |
-| ETag | MD5 (usual) | Random (not MD5) | Not a reliable MD5 of the plaintext |
-| Best for | Default, simple compliance | Key-level control, audit trail, separation of duties, compliance | Keys must never be stored/seen by AWS |
+| | **SSE-S3** | **SSE-KMS** | **DSSE-KMS** | **SSE-C** |
+|---|---|---|---|---|
+| Key management | **Amazon S3** | **AWS KMS** (AWS managed key `aws/s3` or a **customer managed key**) | **AWS KMS** | **You** (bring your own key, sent with each request) |
+| Header | `x-amz-server-side-encryption: AES256` | `x-amz-server-side-encryption: aws:kms` (+ `x-amz-server-side-encryption-aws-kms-key-id`) | `x-amz-server-side-encryption: aws:kms:dsse` | `x-amz-server-side-encryption-customer-algorithm: AES256` + key + MD5 of key |
+| Layers of encryption | 1 | 1 | **2** independent AES-256 layers | 1 |
+| Key storage by AWS | Yes (keys are rotated/managed for you) | KMS holds the key material | KMS holds the key material | **Never** — used in memory, then discarded (S3 keeps only a salted HMAC to validate it) |
+| Auditing | Standard S3 logging | **CloudTrail key-usage events**, per-key IAM/key policy granularity, key disable & scheduled deletion | Same as SSE-KMS | None (S3 has no key record) |
+| Extra cost | Included | **KMS requests per PUT/GET** (mitigate with **S3 Bucket Keys**) | KMS requests + DSSE storage surcharge (no Bucket Keys) | Included |
+| ETag | MD5 (usual) | Not MD5 | Not MD5 | Not MD5 |
+| Best for | Default, simple compliance | Key-level control, audit trail, separation of duties, compliance | Rules requiring two layers of encryption (e.g. CNSSP 15) | Keys must never be stored by AWS |
 
 Notes:
 
-
-- **Server-side Encryption** only encrypts THE CONTENT of an object, not its metadata.
+- **Server-side encryption covers the object data only**, not its metadata, key name or tags — never put secrets in metadata or keys.
 - **Default encryption** on the bucket sets the encryption for all new/overwrite objects (SSE-S3 or SSE-KMS); a **bucket policy** can *require* it by denying `PutObject` without the right header.
 - **SSE-C** requests must use **HTTPS**, and you must supply the **identical key on every GET** — losing the key means losing the data (AWS explicitly can't recover it).
 - **S3 Bucket Keys**: for SSE-KMS, a bucket-level key is used to derive per-object keys — reduces KMS calls (and cost) by up to ~99%, with the same audit properties.
-- **DSSE-KMS**: it's SSE-KMS, with the INCLUSION OF CLIENT-SIDE ENCRYPTION.
-Data in encrypted twice and the client-side key comes from KMS.
+- **DSSE-KMS** (dual-layer server-side encryption) has nothing to do with client-side encryption: **S3 itself** encrypts the data twice, with two independent layers of AES-256, using data keys from KMS. It exists for standards that mandate multi-layer encryption; for everything else SSE-KMS is enough.
 - Encryption is **transparent**: SDKs/CLI/consoles just work; there is nothing to change in applications for SSE-S3/SSE-KMS.
 - Keys are encrypted with **FIPS 140-2/140-3 validated** hardware modules (S3 uses validated cryptographic modules for SSE-S3).
 - SSE protects **at rest** only — pair it with [in-transit encryption](#in-transit-encryption).
@@ -364,7 +365,7 @@ Data in encrypted twice and the client-side key comes from KMS.
 - **Protection against ransomware/overwrite**: `PutObject` creates a *new version*; the old bytes are still there. This is why versioning is the first line of defence in the "bucket was wiped" scenario.
 - **Prerequisite** for **Cross-Region/Same-Region Replication**, **S3 Object Lock** (WORM) and **lifecycle cleanup of old versions**.
 - Costs: all versions consume storage — add **lifecycle rules** to expire noncurrent versions / delete markers after N days.
-- States: *Off → Enabled*; once **suspended** it can be re-enabled but never fully "off" again, and existing versions remain.
+- States: *Unversioned* (default) → *Enabled* ↔ *Suspended*. Once enabled, the bucket can never return to unversioned; suspending stops new versions but keeps existing ones.
 - With versioning, "delete" means one of three things: remove a delete marker (restore), delete a specific version (permanent, needs extra privileges), or lifecycle-expire it.
 
 **Exam mapping:** "protect against accidental deletion / application overwrite / object-lock / replication" → **enable versioning** (before uploading data — it cannot be applied retroactively to already-deleted data).
@@ -390,18 +391,18 @@ Data in encrypted twice and the client-side key comes from KMS.
 
 ## Object tags
 
-**Tags** are pairs of key/value metadata attached to a **bucket or an object** (max **10 tags per object**, key ≤128 chars, value ≤256 chars, case-sensitive, no `aws:` prefix).
+**Tags** are pairs of key/value metadata attached to a **bucket or an object** (max **10 tags per object**, 50 per bucket; key ≤128 chars, value ≤256 chars, case-sensitive, no `aws:` prefix).
 
 Security-relevant uses:
 
-- **Attribute-based access control (ABAC)**: bucket policies and IAM policies can condition on `s3:ResourceTag` ("only if `classification=public`") and `aws:RequestTag`/`s3:Tagging` (you may only *set* tags from an allowed set). The combination is how you build "a user may only read objects tagged with their team".
+- **Attribute-based access control (ABAC)**: bucket and IAM policies can condition on **`s3:ExistingObjectTag/<key>`** (tags already on the object — "only if `classification=public`") and **`s3:RequestObjectTag/<key>`** / **`s3:RequestObjectTagKeys`** (tags sent with an upload or tagging call — you may only *set* tags from an allowed set). Combined with `aws:PrincipalTag`, this is how you build "a user may only read objects tagged with their team".
 - **Data classification / governance**: tag objects with `pii`, `retention`, `confidentiality` and then have policies, lifecycle rules and audits act on those tags.
 - **Lifecycle rules**: expire/transition *tagged* objects (e.g. delete all `temp=true` objects after 7 days — a cheap data-hygiene/security control).
 - **Cost allocation**: **bucket-level** tags can be activated as **cost allocation tags** so S3 spend is broken down per bucket/project in the bill.
 - **Audit/traceability**: tags appear in CloudTrail (for tagging calls), S3 Inventory and Storage Lens — "which objects belong to project X?".
 - **Tags live outside the object's data**: they are stored separately, returned on GET/HEAD (`x-amz-tagging`) or with the `?tagging` sub-resource, and set via the `x-amz-tagging` header / `PutObjectTagging`.
 - Tags are **version-specific**: in a versioned bucket each version carries its own tag set, and tagging operations (`PutObjectTagging`/`DeleteObjectTagging`) act on an existing version **without creating a new one** (only a `PUT` of a new object makes a new version). Without a version ID, they act on the current version; pass a version ID (`s3:PutObjectVersionTagging`) to tag a specific older version.
-- Tags **survive copies** only if you pass them (`x-amz-tagging-directive: COPY` is default on CopyObject) — and they are **not** automatically applied on replication unless configured.
+- Tags **survive copies** by default (`x-amz-tagging-directive: COPY` is the CopyObject default; use `REPLACE` to set new ones), and they are **replicated by default** with the object (the replication role needs `s3:ReplicateTags`).
 
 ---
 

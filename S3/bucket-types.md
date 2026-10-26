@@ -1,11 +1,13 @@
 # S3 Bucket Types — General Purpose vs Directory Buckets
 
-S3 has **two types of buckets**, introduced at re:Invent 2023:
+For the SAA exam, S3 has **two types of buckets** (the distinction was introduced at re:Invent 2023):
 
 1. **General purpose buckets** — the original bucket type, with the classic *flat* namespace.
 2. **Directory buckets** — the new bucket type, used exclusively with the **S3 Express One Zone** storage class.
 
 The bucket type is chosen at creation time and **cannot be changed afterwards**.
+
+AWS has since added two more specialized types, outside the exam scope: **table buckets** (S3 Tables — managed Apache Iceberg tables for analytics, Dec 2024) and **vector buckets** (S3 Vectors — storing and querying embeddings, 2025).
 
 ## General Purpose Buckets (flat hierarchy)
 
@@ -32,7 +34,7 @@ S3 does not create or manage these marker objects automatically — uploading `p
 
 Since there are no real locations to move between, "moving" an object into a folder is **nothing but a change of its key** — the data itself doesn't need to go anywhere. Under the hood S3 implements a move (or a rename) as **CopyObject + DeleteObject**: a new object with the new key is created and the old one is deleted. Consequences worth remembering for the exam:
 
-- A "move" is actually a **new object**: its ETag changes, and with versioning enabled you end up with new versions (the old one gets a delete marker).
+- A "move" is actually a **new object** under a new key: it gets a new `Last-Modified` (and a new ETag whenever the ETag isn't a plain MD5, e.g. with SSE-KMS), and with versioning enabled the old key gets a delete marker while its versions remain billable.
 - A move across storage classes/buckets is also just a copy — so it may incur **retrieval fees** (e.g. from Glacier) and is a billable `PUT` request.
 - A **lifecycle rule can change an object's "location"** by transitioning it to another storage class — again, only its metadata/storage class changes, the key stays the same.
 
@@ -66,7 +68,7 @@ Many well-known S3 features simply don't exist for directory buckets — a frequ
 
 - **Versioning**, **replication**, **Object Lock**, **MFA delete**
 - **ACLs** (always disabled; access is defined by policies only) and **Block Public Access is always on** and can't be relaxed
-- **Lifecycle transition actions**, **S3 Select**, **Object tags**
+- **Lifecycle transition actions** (expiration is supported), **S3 Select**, **Object tags**
 - **S3 Event Notifications**, **Storage Lens**, **Requester Pays**, **Access Grants**
 - **Static website hosting**, **Transfer Acceleration**, **Multi-Region Access Points**, **Object Lambda**, **PrivateLink for S3**
 - **SSE-C** and **DSSE-KMS** — encryption is **SSE-S3 by default**, with optional **SSE-KMS using a single customer managed key per bucket** (bucket keys always enabled)

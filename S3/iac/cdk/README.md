@@ -87,7 +87,7 @@ class CdkStack(Stack):
 - The second argument (`"MyBucket"`) is the **logical ID**: it must be unique within the stack.
 - `removal_policy=DESTROY` + `auto_delete_objects=True` let `cdk destroy` delete a *non-empty* bucket.
   They are convenient for the course, but **remove them for production**: the default is `RETAIN`, so
-  the bucket survives and deleting a non-empty bucket does not fail.
+  `cdk destroy` deletes the stack but leaves the bucket (and its data) in place.
 - `block_public_access=BLOCK_ALL` is already the CDK default; it is set explicitly here because it
   matters for the SAA exam.
 
@@ -125,7 +125,7 @@ CfnOutput(
 ### Verify before deploying
 
 ```bash
-cd s3/iac/cdk
+cd S3/iac/cdk
 cdk synth
 ```
 
@@ -147,10 +147,12 @@ bucket name at deploy time.
 
 ## Useful commands
 
+ * `cdk bootstrap`   one-time per account/region: creates the `CDKToolkit` stack (assets bucket, deploy roles). Required here, because `auto_delete_objects` ships a Lambda-backed custom resource as an asset
  * `cdk ls`          list all stacks in the app
  * `cdk synth`       emits the synthesized CloudFormation template
- * `cdk deploy`      deploy this stack to your default AWS account/region
  * `cdk diff`        compare deployed stack with current state
+ * `cdk deploy`      deploy this stack to your default AWS account/region
+ * `cdk destroy`     delete the stack (and, here, the bucket and its objects)
  * `cdk docs`        open CDK documentation
 
 Enjoy!
