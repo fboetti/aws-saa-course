@@ -100,6 +100,25 @@ Consequences that explain almost every exam question:
 - The VPC owner can see participant ENIs and security groups but cannot modify them;
   participants cannot see each other's resources.
 
+### What sharing does and does not expose
+
+Sharing a subnet does **not** share the resources living in it. Each account sees only
+its own workload plane, plus the owner's network plane:
+
+| Resource | Owner sees | Participant sees |
+|---|---|---|
+| Shared subnets / VPC | Yes (owns them) | Yes (marked with owner's account ID) |
+| **Security groups** | Own SGs **and** participants' SGs (read-only) | Own SGs only — never the owner's, unless the owner shares them via RAM |
+| **EC2 instances** | Own only — participants' instances are **not** visible or manageable | Own only — not the owner's, not other participants' |
+| ENIs | Own **and** participants' ENIs (read-only) | Own only |
+
+- Visibility comes from **account ownership of the resource**, not from a cross-account
+  IAM role. The owner needs no role in the participant account to see its ENIs and SGs;
+  and assuming a role in a participant account gives you that account's view, not an
+  extended view of the shared VPC.
+- To act on a participant's instances, the owner would need real access to that account
+  (e.g. a cross-account role) — VPC sharing itself grants none.
+
 ## Prerequisites
 
 | Requirement | Detail |

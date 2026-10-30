@@ -115,7 +115,7 @@ How the decision is made:
 - **Longest prefix match wins**: for a packet to `10.0.1.7`, a `10.0.1.0/24` route beats
   `10.0.0.0/16`, which beats `0.0.0.0/0`.
 - `0.0.0.0/0` is the **default route** — the fallback when nothing more specific matches.
-  Pointing it at an IGW is what "sending traffic to the internet" means in a VPC.
+  Pointing it at an IGW is what "sending traffic to the internet" means in a VPC. `::/0` is the IPV6 version.
 - Route tables are associated with **subnets**, not with the VPC as a whole — that is how
   two subnets in the same VPC have different egress paths.
 - **Best practice**: leave the main table **private** (local route only, or NAT) and give

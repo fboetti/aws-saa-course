@@ -7,6 +7,7 @@ Notes on **Amazon Virtual Private Cloud (VPC)**, the networking layer everything
 | **This page** | The whole VPC map: addressing, internet access, security layers, hybrid/multi-VPC connectivity, exam facts |
 | [VPC Networking](networking/README.md) | Fundamentals first: CIDR maths, subnets, route tables, the IGW and how a packet actually flows |
 | [Default VPC](default-vpc/README.md) | The VPC AWS builds for you: its CIDR, what gets created, why it exists, how to recreate it |
+| [Network ACLs](nacl/README.md) | The stateless subnet firewall: rule ordering, ephemeral ports, default vs custom, SG vs NACL, exam traps |
 | [VPC Sharing with AWS RAM](vpc-sharing/README.md) | Letting other accounts launch into your subnets — who owns, controls and pays for what |
 
 ## What is a VPC?
@@ -504,4 +505,4 @@ aws ec2 describe-subnets \
 - VPC pricing: https://aws.amazon.com/vpc/pricing/
 - AWS whitepaper — Building a Scalable and Secure Multi-VPC AWS Network Infrastructure: https://docs.aws.amazon.com/whitepapers/latest/building-scalable-secure-multi-vpc-network-infrastructure/welcome.html
 - SAA-C03 exam guide: https://aws.amazon.com/certification/certified-solutions-architect-associate/
-- Related notes in this repo: [VPC Networking fundamentals](networking/README.md), [Default VPC](default-vpc/README.md), [VPC Sharing with AWS RAM](vpc-sharing/README.md), [AWS Global Infrastructure](../concepts/README.md), [Availability Zones](../concepts/availability-zones/README.md), [Resilience patterns](../concepts/resilience/README.md)
+- Related notes in this repo: [VPC Networking fundamentals](networking/README.md), [Default VPC](default-vpc/README.md), [Network ACLs](nacl/README.md), [VPC Sharing with AWS RAM](vpc-sharing/README.md), [AWS Global Infrastructure](../concepts/README.md), [Availability Zones](../concepts/availability-zones/README.md), [Resilience patterns](../concepts/resilience/README.md)
