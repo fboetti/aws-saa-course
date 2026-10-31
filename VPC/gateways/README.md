@@ -25,7 +25,7 @@ entering the VPC. A gateway moves traffic; it does not filter it (SGs/NACLs do).
 |---|---|---|
 | **Internet Gateway (IGW)** | Two-way internet access for resources with a public IP | One per VPC; free; horizontally scaled and highly available; does the public ↔ private IP mapping. Route `0.0.0.0/0 → igw` makes a subnet public |
 | **NAT Gateway** | **Outbound-only** IPv4 internet for private subnets | Lives in a **public subnet** with an Elastic IP; managed, scales up to 100 Gbps; zonal, so deploy **one per AZ**; billed per hour + per GB. A *private* NAT GW translates between overlapping private networks |
-| **Egress-only IGW** | **Outbound-only IPv6** | Stateful, free; the IPv6 counterpart to a NAT gateway (IPv6 has no NAT) |
+| **Egress-only IGW** | **Outbound-only IPv6**: avoid inbound traffic to IPv6 instances that have public addresses | Stateful, free; the IPv6 counterpart to a NAT gateway (IPv6 has no NAT) |
 | *NAT instance* | Legacy self-managed EC2 NAT | Disable source/dest check; cheap but a single point of failure |
 
 ### Private connectivity to AWS services
