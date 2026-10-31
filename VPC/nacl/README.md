@@ -2,7 +2,7 @@
 
 A **network ACL (NACL)** is a **stateless firewall at the subnet boundary**. It filters
 every packet entering or leaving a subnet, using an ordered list of **allow and deny**
-rules. It is the second filtering layer of a VPC, next to [security groups](../README.md#security-security-groups-and-nacls).
+rules. It is the second filtering layer of a VPC, next to [security groups](../security-groups/README.md).
 
 ```
                      ┌──────────────── Subnet 10.0.1.0/24 ────────────────┐
