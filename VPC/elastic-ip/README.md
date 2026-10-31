@@ -33,7 +33,23 @@ instance's public address is mapped (1:1 NAT by the IGW) to its private one.
   outbound-only, plus SG/NACL rules for IPv6.
 - For a **fixed IPv6 for failover**, move the ENI (or use your own IPv6 range via BYOIP).
 
+### AWS support for IPv6
 
+- **Dual-stack model:** a VPC always keeps its IPv4 CIDR and can add an IPv6 one (**/56**,
+  Amazon-provided or BYOIP); each subnet gets a **/64**. Subnets can be **dual-stack** or
+  **IPv6-only**.
+- **Network layer:** IPv6 has its own routes (`::/0`) and its own SG and NACL rules.
+  Internet access goes through the **IGW** (two-way) or the **egress-only IGW** (outbound
+  only). **NAT Gateway is IPv4-only**; **NAT64/DNS64** lets IPv6-only workloads reach IPv4
+  services.
+- **Services:** EC2, ALB/NLB, CloudFront, Route 53 (`AAAA` records), S3, VPC endpoints,
+  Transit Gateway, peering, Direct Connect and Site-to-Site VPN support IPv6, though
+  support varies per service and Region — check before relying on it.
+- **Exam angle:** IPv4 cannot be disabled in a VPC; IPv6 addresses are public, so use the
+  egress-only IGW to prevent inbound; "running out of IPv4 addresses" points to **adding
+  an IPv6 CIDR / IPv6-only subnets**.
+
+## Public IP Types Compared
 
 | | **Auto-assigned public IPv4** | **Elastic IP** |
 |---|---|---|
