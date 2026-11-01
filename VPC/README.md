@@ -278,7 +278,26 @@ Endpoints let VPC resources reach AWS services **privately**, without IGW, NAT o
 - **VPN CloudHub**: several branch sites connect to one VGW and can reach each other (hub-and-spoke over VPN).
 - Set up in minutes, encrypted, but latency/throughput depend on the internet.
 
-**AWS Client VPN** is a different product: a managed **OpenVPN-based** endpoint for individual **users/laptops** to reach the VPC (and on-prem through it).
+**ASN (Autonomous System Number) and the VGW**
+
+- An **ASN** identifies a network in **BGP**; the two sides of a BGP session each have one.
+- **Amazon-side ASN**: chosen when you create the VGW (default **64512**). Custom private range: **64512–65534** (16-bit) or **4200000000–4294967294** (32-bit). **Cannot be changed after creation** — delete and recreate the VGW.
+- **Customer-side ASN**: the ASN of your on-prem router, set on the **Customer Gateway**.
+- The two ASNs must be **different** (eBGP). Same ASN = iBGP, which does not work as intended.
+- Used by dynamic-routing **Site-to-Site VPN** and **Direct Connect private VIFs**. Static-routing VPNs do not need BGP, but the CGW still requires an ASN value.
+- A **Transit Gateway** has its own Amazon-side ASN (default 64512, set at creation).
+
+### AWS Client VPN
+
+A managed **OpenVPN-based** (TLS, port 443 UDP/TCP) VPN for individual **users/laptops** to reach the VPC (and on-prem/peered VPCs through it). Site-to-Site VPN connects networks; Client VPN connects people.
+
+- Create a **Client VPN endpoint** and **associate it with subnets** (creates ENIs); use **several AZs** for HA.
+- **Authentication**: **mutual (certificates in ACM)**, **Active Directory** (supports MFA), or **SAML federation** (SSO, e.g. IAM Identity Center, Okta).
+- **Authorization rules** decide which CIDRs each user/AD group can reach; **endpoint route table** decides where the traffic goes.
+- **Client CIDR**: at least **/22**, must **not overlap** the VPC CIDR or other routes.
+- **Security groups** apply to the endpoint ENIs; target resources can reference that SG.
+- **Split tunnel**: only VPC/configured-route traffic uses the VPN. Full tunnel + `0.0.0.0/0` route (with an authorization rule and a NAT gateway/IGW) sends internet traffic through AWS too.
+- **Connection logs** to CloudWatch Logs. Billed per endpoint association per hour + per active connection per hour.
 
 ### AWS Direct Connect (DX)
 

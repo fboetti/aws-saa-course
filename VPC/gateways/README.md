@@ -40,12 +40,12 @@ entering the VPC. A gateway moves traffic; it does not filter it (SGs/NACLs do).
 
 | Gateway | Purpose | Key points |
 |---|---|---|
-| **Virtual Private Gateway (VGW)** | VPN / Direct Connect endpoint on the **AWS side of one VPC** | One per VPC; pairs with a **Customer Gateway** (the on-premises device); supports route propagation |
+| **Virtual Private Gateway (VGW)** | VPN / Direct Connect endpoint on the **AWS side of one VPC** | One per VPC; pairs with a **Customer Gateway** (the on-premises device); supports route propagation; **Amazon-side ASN** (default 64512) fixed at creation and must differ from the CGW's ASN |
 | **Customer Gateway (CGW)** | AWS object describing **your** on-premises VPN device | Public IP + BGP ASN; lives on your side |
 | **Transit Gateway (TGW)** | **Regional hub** for many VPCs, VPNs and Direct Connect | Transitive routing; own route tables for segmentation; paid per attachment + GB; can peer across Regions |
 | **Direct Connect Gateway** | Reach VPCs in **many Regions/accounts** from one Direct Connect link | Global; connects private/transit VIFs to VGWs or TGWs |
 | **VPC peering connection** (`pcx-`) | Direct private link between two VPCs | Not a physical gateway, but a route target; **not transitive**; no overlapping CIDRs |
-| **Client VPN endpoint** | Managed OpenVPN access for remote users | Associates with subnets; not the same as Site-to-Site VPN |
+| **Client VPN endpoint** | Managed OpenVPN access for remote users | Associates with subnets; auth via certificates, AD or SAML; client CIDR ≥ /22; not the same as Site-to-Site VPN |
 
 ### Other gateway names you may meet
 
