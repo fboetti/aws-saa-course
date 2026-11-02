@@ -215,7 +215,7 @@ Evaluation order: **inbound** → NACL (subnet) → SG (ENI) → instance; **out
 
 ### Beyond SG/NACL
 
-- **AWS Network Firewall** — managed stateful firewall/IPS with domain filtering, deployed in its own subnets; you steer traffic to it through route tables. Answer for "inspect/filter all traffic leaving the VPC" or "block outbound access to specific domains".
+- **AWS Network Firewall** — managed stateful firewall and IDS/IPS with domain filtering, deployed in its own subnets; you steer traffic to it through route tables. Answer for "inspect/filter all traffic leaving the VPC" or "block outbound access to specific domains".
 - **Gateway Load Balancer (GWLB)** — inserts fleets of **third-party virtual appliances** (firewalls, IDS) transparently into the traffic path (GENEVE, port 6081), reached through **GWLB endpoints**.
 - **AWS WAF** protects L7 (ALB, API Gateway, CloudFront) — it is not a VPC feature, but often appears as the alternative answer.
 
@@ -327,7 +327,7 @@ A managed **OpenVPN-based** (TLS, port 443 UDP/TCP) VPN for individual **users/l
 
 - **VPC Flow Logs** — metadata of IP traffic (source/destination IP and port, protocol, bytes, `ACCEPT`/`REJECT`) at **VPC, subnet or ENI** level, delivered to **CloudWatch Logs, S3 or Kinesis Data Firehose**. Not real-time (aggregation window up to ~10 minutes), **no packet contents**. Not captured: traffic to the Amazon DNS resolver, instance metadata (`169.254.169.254`), Amazon Time Sync, DHCP. Query them with **Athena** (S3) or CloudWatch Logs Insights.
   - Reading a rejection: inbound `ACCEPT` but the response `REJECT` → a **NACL** is blocking the return (SGs are stateful and would have allowed it).
-- **Traffic Mirroring** — copies **actual packets** from an ENI to an inspection target (IDS, packet analysis).
+- **Traffic Mirroring** — copies **actual packets** from an ENI to an inspection target/security monitoring appliance (IDS, packet analysis).
 - **Reachability Analyzer** — static analysis of whether a path between two resources *would* work and which component blocks it; **sends no packets**.
 - **Network Access Analyzer** — finds unintended access paths (e.g. "is any database reachable from the internet?").
 - **Route 53 Resolver endpoints** — **inbound** (on-prem resolves AWS private names) and **outbound** (VPC resolves on-prem names via forwarding rules) for hybrid DNS. **DHCP option sets** set custom DNS servers / domain names for a VPC.
@@ -530,4 +530,4 @@ aws ec2 describe-subnets \
 - VPC pricing: https://aws.amazon.com/vpc/pricing/
 - AWS whitepaper — Building a Scalable and Secure Multi-VPC AWS Network Infrastructure: https://docs.aws.amazon.com/whitepapers/latest/building-scalable-secure-multi-vpc-network-infrastructure/welcome.html
 - SAA-C03 exam guide: https://aws.amazon.com/certification/certified-solutions-architect-associate/
-- Related notes in this repo: [VPC Networking fundamentals](networking/README.md), [Default VPC](default-vpc/README.md), [VPC Endpoints](vpc-endpoints/README.md), [Direct Connect](direct-connect/README.md), [Elastic IP](elastic-ip/README.md), [Gateways](gateways/README.md), [Route Tables](route-tables/README.md), [Network ACLs](nacl/README.md), [Security Groups](security-groups/README.md), [VPC Sharing with AWS RAM](vpc-sharing/README.md), [AWS Global Infrastructure](../concepts/README.md), [Availability Zones](../concepts/availability-zones/README.md), [Resilience patterns](../concepts/resilience/README.md)
+- Related notes in this repo: [VPC Networking fundamentals](networking/README.md), [Default VPC](default-vpc/README.md), [VPC Endpoints](vpc-endpoints/README.md), [VPC Lattice](vpc-lattice/README.md), [Transit Gateway](transit-gateway/README.md), [VPC Peering](vpc-peering/README.md), [Direct Connect](direct-connect/README.md), [Bastion host](bastion/README.md), [Elastic IP](elastic-ip/README.md), [Gateways](gateways/README.md), [Route Tables](route-tables/README.md), [Network ACLs](nacl/README.md), [Security Groups](security-groups/README.md), [VPC Sharing with AWS RAM](vpc-sharing/README.md), [AWS Global Infrastructure](../concepts/README.md), [Availability Zones](../concepts/availability-zones/README.md), [Resilience patterns](../concepts/resilience/README.md)
