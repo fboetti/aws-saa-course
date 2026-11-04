@@ -4,6 +4,8 @@
 
 Created with the account; signs in with the **email + password** and has **unrestricted** access that **cannot be limited by IAM policies** (SCPs *can* restrict the root of a *member* account).
 
+Full details: [Root User](root-user.md).
+
 Best practice: enable **MFA**, delete/never create access keys, don't use for daily work, store credentials in a safe.
 
 **Tasks that require root** (classic exam list):
@@ -13,10 +15,9 @@ Best practice: enable **MFA**, delete/never create access keys, don't use for da
 - Change or cancel the AWS Support plan
 - Restore IAM user permissions (when the last admin locked themselves out)
 - Activate IAM access to the Billing console
-- Enable MFA Delete on an S3 bucket (root of the bucket-owning account)
+- Enable **MFA Delete** on an S3 bucket (root of the bucket-owning account)
 - Edit or delete an S3 bucket policy that denies all principals
 - Register as a seller in the Reserved Instance Marketplace
-- Configure an S3 bucket to enable MFA delete / sign up for GovCloud
 
 ## IAM users
 

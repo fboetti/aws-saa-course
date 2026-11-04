@@ -2,6 +2,28 @@
 
 Central **workforce** sign-on for many AWS accounts and business apps.
 
+## AWS Single Sign-On (AWS SSO) in brief
+
+**AWS SSO** is the former name of IAM Identity Center (renamed in **July 2022**). Old courses, videos and exam material may still say "AWS SSO"; it is the same service, and the CLI commands (`aws sso login`, `aws configure sso`, `aws sso-admin`) and the `awsapps.com/start` portal URL kept the old name.
+
+**Single sign-on** means a user authenticates **once** with a central identity and then reaches many accounts and applications without signing in again.
+
+```
+User ─► sign in once (+ MFA) ─► access portal ─┬─► AWS account A (role: Admin)
+                                               ├─► AWS account B (role: ReadOnly)
+                                               └─► SAML apps (Salesforce, Slack, Microsoft 365…)
+```
+
+What it gives you:
+
+- One login for **all AWS accounts in an Organization** plus **SAML 2.0 business apps**.
+- Users and groups come from the built-in directory, **Active Directory**, or an **external IdP** (Okta, Entra ID, Google) via SAML + SCIM.
+- Access is defined once as **permission sets** and assigned to users/groups per account; behind the scenes they become IAM roles with temporary credentials.
+- Central off-boarding: disable the user in the directory and every account loses access.
+- Free; requires AWS Organizations.
+
+**Exam hint:** "single sign-on to multiple AWS accounts and applications" → **IAM Identity Center (formerly AWS SSO)**.
+
 ## Core ideas
 
 | Term | Meaning |

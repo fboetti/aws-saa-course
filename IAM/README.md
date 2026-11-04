@@ -6,11 +6,14 @@ Notes on **AWS Identity and Access Management (IAM)**, the service that decides 
 |---|---|
 | **This page** | The whole IAM map: identities, policies, evaluation, federation, exam facts |
 | [Identities: Users, Groups, Roles](identities.md) | Root user, IAM users, groups, roles, service-linked roles, instance profiles, trust policies |
+| [Root User](root-user.md) | Root-only tasks, hardening checklist, SCP guardrail, compromise response, exam traps |
+| [Cross-Account Roles](cross-account-roles.md) | Trust + permission policies, AssumeRole, External ID, role vs resource policy |
 | [IAM Policies](policies.md) | Policy JSON anatomy, policy types, managed vs inline, identity vs resource-based, conditions |
 | [Policy Evaluation Logic](policy-evaluation.md) | How AWS decides allow/deny: explicit deny, same- vs cross-account, the flowchart |
 | [Permission Boundaries and SCPs](permission-boundaries-scps.md) | Guardrails that cap permissions: boundaries, SCPs, session policies and how they intersect |
 | [ABAC and Tags](abac.md) | Attribute-based access control with tags vs classic RBAC |
 | [MFA, Passwords and Credentials](mfa-passwords-credentials.md) | MFA types, password policy, access keys, credential report, rotation, root hardening |
+| [Identity Federation](federation.md) | SAML, OIDC, Cognito, brokers, AD: how external identities get temporary credentials, with examples |
 | [IAM Identity Center](identity-center.md) | Workforce SSO across accounts, permission sets, external IdPs |
 | [Monitoring and Auditing](monitoring-auditing.md) | Credential report, Access Advisor, Access Analyzer, CloudTrail, policy simulator |
 | [Least Privilege](least-privilege.md) | The principle in practice: scoping actions/resources/conditions, tools to get there, exam scenarios |
