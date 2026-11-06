@@ -33,6 +33,14 @@ Classic ports: **22** SSH, **3389** RDP, **80** HTTP, **443** HTTPS, **21** FTP,
 - **Session Manager (SSM)**: no inbound ports, no key pair, no bastion; IAM-controlled, logged to CloudWatch/S3. Needs SSM Agent + instance role `AmazonSSMManagedInstanceCore` + network path to SSM endpoints.
 - **Bastion host** in a public subnet (legacy approach).
 
+Switch to the default user (e.g. after a Session Manager login, which starts as `ssm-user`):
+
+```bash
+sudo su - ec2-user
+```
+
+The `-` gives a full login shell (home directory, `ec2-user` environment). Default usernames: `ec2-user` (Amazon Linux), `ubuntu` (Ubuntu), `admin` (Debian), `ec2-user` or `centos` (RHEL/CentOS variants).
+
 ## IAM Roles for EC2
 
 - Attach an **instance profile** (role) → temporary credentials via instance metadata. **Never** store access keys on instances.

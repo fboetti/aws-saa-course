@@ -6,6 +6,7 @@ Notes on **Amazon Elastic Compute Cloud (EC2)**, AWS's virtual-server service. F
 |---|---|
 | **This page** | The EC2 map: what it is, lifecycle, key facts |
 | [Instance Types](instance-types.md) | Families (M, C, R, T, I, G…), naming, burstable CPU, Graviton, Nitro |
+| [Lifecycle and Actions](lifecycle.md) | Launch, reboot, stop/start, hibernate, terminate, retire, recover, status checks |
 | [AMIs](amis.md) | Images, root device, copying across regions, sharing, building |
 | [Purchasing Options](purchasing-options.md) | On-Demand, Reserved, Savings Plans, Spot, Dedicated, Capacity Reservations |
 | [Storage: EBS, Instance Store, EFS](storage.md) | Volume types, snapshots, encryption, instance store, sharing file systems |

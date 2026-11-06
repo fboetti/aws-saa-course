@@ -2,7 +2,7 @@
 
 ## User Data
 
-- Script/cloud-init config passed at launch to **bootstrap** an instance (install packages, start services, pull code). Can be a bash scriptp or a yaml file.
+- Script/cloud-init config passed at launch to **bootstrap** an instance (install packages, start services, pull code). Can be a bash-or-powershell script or a yaml file.
 - Runs **once at first boot** by default, as **root**. Can be configured to run on every boot (cloud-init settings / `#cloud-boothook`).
 - Limit **16 KB** (raw, before base64).
 - Editable only when the instance is **stopped**; take effect on next boot if set to rerun.
@@ -20,7 +20,7 @@ Long user data slows launch → prefer a **pre-baked AMI** for heavy setup.
 
 ## Instance Metadata Service (IMDS)
 
-- Available **inside** the instance at `http://169.254.169.254/latest/meta-data/` (IPv6: `fd00:ec2::254`).
+- Available **inside** the instance (curl command inside the EC2 instance you want to monitor) at `http://169.254.169.254/latest/meta-data/` (IPv6: `fd00:ec2::254`).
 - Provides: instance ID, type, AMI ID, AZ, local/public IPs, security groups, IAM role credentials (`iam/security-credentials/<role>`), tags (if enabled), user data.
 - Not encrypted, no auth beyond local access; **not** metadata about the instance's own data/OS.
 
@@ -38,6 +38,8 @@ curl -H "X-aws-ec2-metadata-token: $TOKEN" \
   http://169.254.169.254/latest/meta-data/instance-id
 ```
 
+- **IMDSv2** was introduced after an exploit of IMDSv1. It adds defense in depths attacks against open firewalls, reverse proxies, SSRF vulnerabilities.
+- You can call IMDSv1 endpoints without retrieving the TOKEN before 
 - **Enforce IMDSv2** (`HttpTokens=required`) via launch template/account default. Containers may need hop limit 2.
 
 ## Tags
@@ -50,3 +52,6 @@ curl -H "X-aws-ec2-metadata-token: $TOKEN" \
 - "Run a script at first launch" → user data.
 - "Instance needs to know its own IP/AZ" → metadata endpoint.
 - "Reduce SSRF credential theft risk" → require IMDSv2.
+- endpoint address: 
+  - IPv4 -> http://169.254.169.254/latest/meta-data/<optional_category>
+  - IPv6 -> http://[fd00:ec2::254]/latest/meta-data/<optional_category>
