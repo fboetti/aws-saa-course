@@ -50,5 +50,5 @@ Key points:
 - Max **EBS-backed** root volume up to 64 TiB (gp3/io2); instance store root is possible on older/special AMIs.
 - Default limits: On-Demand **vCPU-based service quotas** per region.
 - **User data** runs once at first launch (by default), as root.
-- **Connect**: SSH (22), RDP (3389), **EC2 Instance Connect**, **Session Manager** (no open ports needed).
+- **Connect**: SSH (22), RDP (Remote Desktop, port 3389), **EC2 Instance Connect**, **Session Manager** (no open ports needed).
 - Pricing dimensions: instance type, purchasing option, region, EBS, data transfer out, Elastic IPs, load balancers.
