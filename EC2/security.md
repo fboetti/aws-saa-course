@@ -41,6 +41,19 @@ sudo su - ec2-user
 
 The `-` gives a full login shell (home directory, `ec2-user` environment). Default usernames: `ec2-user` (Amazon Linux), `ubuntu` (Ubuntu), `admin` (Debian), `ec2-user` or `centos` (RHEL/CentOS variants).
 
+## EC2 Instance Connect
+
+- Connects to an instance over SSH **without managing long-lived key pairs**. Console: select the instance → **Connect → EC2 Instance Connect** (browser terminal), or from a terminal: `aws ec2-instance-connect ssh --instance-id i-...`.
+- How it works: on each connection it calls `SendSSHPublicKey`, which pushes a **temporary public key** to the instance metadata. The key is valid for **60 seconds**, so you must connect right away. The instance's SSH daemon fetches it through an `AuthorizedKeysCommand` helper.
+- Supported on **Amazon Linux 2 / 2023 and Ubuntu** (the package is preinstalled on those AMIs). Other Linux distros need the `ec2-instance-connect` package installed. **Windows is not supported** (use RDP or SSM).
+- Network requirements:
+  - **Security group must allow inbound SSH (22)** from the source. For the browser console, that is the **AWS-published EC2_INSTANCE_CONNECT IP range** for the region (it can be looked up in `ip-ranges.json`).
+  - The instance needs a **public IPv4** for the browser console. For private instances, use an **EC2 Instance Connect Endpoint** (below).
+- Permissions are **IAM-based**: the user needs `ec2-instance-connect:SendSSHPublicKey`, which can be restricted by instance ID, tags and OS user. This gives per-user control and CloudTrail records of who connected.
+- **EC2 Instance Connect Endpoint (EICE)**: an endpoint in your VPC subnet that lets you SSH/RDP to **private instances without a public IP, bastion host or internet gateway**. Connections are IAM-authorised and logged in CloudTrail. Use `aws ec2-instance-connect ssh --connection-type eice`.
+- Compared with Session Manager: Instance Connect still needs **port 22 open** and an SSH-capable OS. Session Manager needs no inbound ports but needs the SSM Agent and an instance role.
+- Troubleshooting "connection failed" in the console: wrong security group or NACL on port 22, no public IP, unsupported AMI, or wrong default username.
+
 ## IAM Roles for EC2
 
 - Attach an **instance profile** (role) → temporary credentials via instance metadata. **Never** store access keys on instances.
@@ -63,4 +76,5 @@ AWS: hardware, hypervisor, facilities. You: guest OS patches, firewall (SG), IAM
 
 - "Allow only the web tier to talk to DB" → DB SG allows source = web SG.
 - "Access instances without opening ports/bastion" → SSM Session Manager.
+- "Browser SSH, no permanent keys to manage" → **EC2 Instance Connect**. "SSH to a private instance with no bastion/public IP" → **Instance Connect Endpoint**.
 - "App on EC2 must call S3" → IAM role, not access keys.

@@ -85,6 +85,18 @@ For troubleshooting an instance you can't reach (SSH/RDP fails, instance check f
 - Screenshot is available only for **running** instances on Nitro-based types. It is not a live view, and you can't type into it. For input, use the **EC2 Serial Console** (Nitro types).
 - API calls: `GetConsoleScreenshot` and `GetConsoleOutput`.
 
+### System log in detail
+
+- The **system log** is the instance's **console output**: what the OS wrote to the virtual serial console (`ttyS0`) during boot and shutdown. It is not the same as `/var/log/*` files inside the instance.
+- Console: **Actions → Monitor and troubleshoot → Get system log**. CLI: `aws ec2 get-console-output --instance-id i-... --latest` (output is base64 by default, `--output text` decodes it).
+- Shows only the **most recent output** (last ~64 KB), so older boot messages can be missing on a long-running instance. It is refreshed at boot, reboot, stop and terminate, and also periodically while running.
+- Retrievable for **stopped and terminated** instances for a short while (terminated: about an hour, same as the instance's visibility).
+- What to look for:
+  - Linux: kernel panic, `fsck` or failed mount (bad `/etc/fstab` entry is the classic cause of a failed instance status check), network or DHCP errors, SSH host key generation, cloud-init errors (see [Cloud-Init](cloud-init.md)).
+  - Windows: boot and EC2Launch/EC2Config messages, and the generated Administrator password step.
+- Typical flow: instance status check fails → **system log** (text) and **screenshot** (what's on screen) → fix volume or config → reboot. If the root volume is broken, stop the instance, attach its volume to a rescue instance, fix, and re-attach.
+- Does not need network, SSH or an agent, and costs nothing. For ongoing logs use the **CloudWatch agent** instead.
+
 ## Exam Tips
 
 - **Reboot** keeps everything. **Stop/start** loses instance store and public IP. **Recover** keeps IDs and IPs but loses RAM.

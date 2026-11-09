@@ -26,6 +26,19 @@ Prefer a **DNS name / load balancer** over Elastic IPs where possible.
 - **EFA** (Elastic Fabric Adapter): ENA plus OS-bypass, for HPC/MPI/ML (Linux only), lowest latency.
 - Intel 82599 VF (legacy, 10 Gbps).
 
+## Source/Destination Check
+
+- A per-ENI (per-instance in the console) flag, **enabled by default**.
+- When enabled, the instance must be **the source or the destination of every packet** it sends or receives. Traffic that is merely passing through is dropped.
+- **Disable it** when the instance forwards traffic that is not addressed to or from itself:
+  - **NAT instance** (the classic exam case: private subnet traffic is forwarded to the internet)
+  - Routers, VPN gateways, firewall or IDS/IPS appliances, load balancing or proxy appliances
+  - Instances that are a **route table target** for a CIDR they don't own
+- Change it any time, even while running: console **Actions → Networking → Change source/destination check**, or `aws ec2 modify-network-interface-attribute --network-interface-id eni-... --no-source-dest-check`.
+- Disabling does **not** change security groups or NACLs, which still apply. A NAT instance also needs a public IP/EIP, an SG allowing the private subnet's traffic, and a route `0.0.0.0/0 → instance` in the private route table.
+- **NAT Gateway** is managed, so you don't touch this flag. This is one reason it replaces NAT instances.
+- Symptom of a forgotten check: the NAT or firewall instance is reachable and healthy, but private instances get no internet or traffic is silently dropped.
+
 ## Placement Groups
 
 | Strategy | Layout | Pros | Cons / Limits | Use |
@@ -47,3 +60,4 @@ Prefer a **DNS name / load balancer** over Elastic IPs where possible.
 - "Low-latency node-to-node" → cluster placement group + ENA/EFA.
 - "Failover keeping the same IP/MAC (licensing)" → move ENI.
 - "Static IP that survives stop/start" → Elastic IP.
+- "NAT instance / firewall appliance not forwarding traffic" → **disable source/destination check**.
