@@ -2,6 +2,8 @@
 
 ## Auto Scaling Groups (ASG)
 
+> Full notes: [Auto Scaling Groups](auto-scaling-groups.md). Summary below.
+
 An ASG maintains a fleet of EC2 instances: **min / desired / max** capacity across multiple AZs.
 
 - Replaces unhealthy instances (EC2 status checks or ELB health checks).
@@ -26,6 +28,8 @@ An ASG maintains a fleet of EC2 instances: **min / desired / max** capacity acro
 - Termination policy default: balance AZs, then oldest launch template/config, then closest to next billing hour.
 
 ## Elastic Load Balancing (ELB)
+
+> Full notes: [Elastic Load Balancing](elastic-load-balancing.md). Summary below.
 
 Distributes traffic across targets in multiple AZs; managed, highly available, performs **health checks**.
 
