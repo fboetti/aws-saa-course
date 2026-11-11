@@ -10,6 +10,7 @@ Notes on **Amazon Elastic Compute Cloud (EC2)**, AWS's virtual-server service. F
 | [AMIs](amis.md) | Images, root device, copying across regions, sharing, building |
 | [Purchasing Options](purchasing-options.md) | On-Demand, Reserved, Savings Plans, Spot, Dedicated, Capacity Reservations |
 | [Storage: EBS, Instance Store, EFS](storage.md) | Volume types, snapshots, encryption, instance store, sharing file systems |
+| [EBS and EFS in Depth](ebs-efs.md) | Volume types, Multi-Attach, snapshots, encryption, EFS classes, performance/throughput modes, security |
 | [Networking](networking.md) | ENI, public/private/Elastic IP, ENA/EFA, placement groups |
 | [Security](security.md) | Security groups vs NACLs, key pairs, IAM roles, IMDS, SSM |
 | [User Data and Metadata](user-data-metadata.md) | Bootstrapping, instance metadata service, IMDSv2 |

@@ -1,5 +1,7 @@
 # EC2 Storage
 
+Summary page. For deeper EBS and EFS notes see [EBS and EFS in Depth](ebs-efs.md).
+
 ## Options at a Glance
 
 | Storage | Type | Persistence | Scope | Use |
