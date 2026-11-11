@@ -56,7 +56,7 @@ Rules to remember:
 - A volume created from a snapshot is **lazily loaded**: blocks are fetched from S3 on first access, so first reads are slow. Fix by **initialising** (reading all blocks) or enabling **Fast Snapshot Restore (FSR)** (extra cost per AZ/hour).
 - **Snapshot Archive**: up to ~75% cheaper, restore takes 24-72 hours. Good for snapshots kept for months.
 - **Recycle Bin**: retention rules so accidentally deleted snapshots (and AMIs) can be recovered within 1 day to 1 year.
-- **Amazon Data Lifecycle Manager (DLM)**: scheduled, automated creation, retention and deletion of snapshots/AMIs. AWS Backup can also manage them.
+- **Amazon Data Lifecycle Manager (DLM)**: scheduled, automated creation, retention and deletion of snapshots/AMIs. AWS Backup can also manage them (see [AWS Backup](../Backup/README.md)).
 - **EBS direct APIs** read snapshot blocks and write incremental snapshots without creating a volume.
 
 ### Encryption
