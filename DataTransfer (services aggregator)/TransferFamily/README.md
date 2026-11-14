@@ -75,4 +75,4 @@ Partner (SFTP client) → Transfer Family endpoint → S3 bucket / EFS
 - "**EDI / B2B** documents" → **AS2**.
 - It is billed **per hour while the server is running**, even with no traffic.
 
-Related: [S3](../S3/README.md), [EBS and EFS in Depth](../EC2/ebs-efs.md), [Snow Family](../SnowFamily/README.md), [Route 53](../Route53/README.md).
+Related: [S3](../../S3/README.md), [EBS and EFS in Depth](../../EC2/ebs-efs.md), [Snow Family](../SnowFamily/README.md), [Route 53](../../Route53/README.md).

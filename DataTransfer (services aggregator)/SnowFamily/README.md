@@ -69,4 +69,4 @@ Data goes to **S3** only (then use lifecycle rules to move to Glacier). You **ca
 - **OpsHub** is the GUI to manage Snow devices.
 - Ongoing sync over the network → **DataSync**, not Snow.
 
-Related: [S3](../S3/README.md), [Backup](../Backup/README.md), [Storage](../EC2/storage.md).
+Related: [S3](../../S3/README.md), [Backup](../../Backup/README.md), [Storage](../../EC2/storage.md).
