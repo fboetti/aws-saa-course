@@ -70,6 +70,6 @@ Discover (ADS agents / connector)  →  Group into applications
 - "**Migrate a database**" → **DMS** (+ **SCT** when engines differ).
 - "**Estimate cost / business case** of moving to AWS" → **Migration Evaluator**.
 - Migration Hub **doesn't migrate data**; it **tracks and organises**.
-- Large offline data → [Snow Family](../DataTransfer/SnowFamily/README.md); ongoing file sync → DataSync; SFTP → [Transfer Family](../DataTransfer/TransferFamily/README.md).
+- Large offline data → [Snow Family](../DataTransfer%20%28services%20aggregator%29/SnowFamily/README.md); ongoing file sync → DataSync; SFTP → [Transfer Family](../DataTransfer%20%28services%20aggregator%29/TransferFamily/README.md).
 
-Related: [Backup](../Backup/README.md), [Snow Family](../DataTransfer/SnowFamily/README.md), [Transfer Family](../DataTransfer/TransferFamily/README.md).
+Related: [Backup](../Backup/README.md), [Snow Family](../DataTransfer%20%28services%20aggregator%29/SnowFamily/README.md), [Transfer Family](../DataTransfer%20%28services%20aggregator%29/TransferFamily/README.md).

@@ -136,5 +136,5 @@ Decoupled worker pattern: **SQS queue → ASG of workers**, scale on backlog per
 - Cut cost with fault-tolerant workloads → **mixed instances policy** with **Spot**.
 - ASG is **free** and **regional**; it cannot span regions. Launch configurations are **deprecated**.
 - Default scale-in: balance AZs first, then oldest launch template/config.
-- Fargate doesn't use ASG
+- **Fargate** has no instances, so it does not use an ASG. Scale the ECS service with [Application Auto Scaling](application-auto-scaling.md).
 

@@ -16,6 +16,7 @@ Notes on **Amazon Elastic Compute Cloud (EC2)**, AWS's virtual-server service. F
 | [User Data and Metadata](user-data-metadata.md) | Bootstrapping, instance metadata service, IMDSv2 |
 | [Cloud-Init](cloud-init.md) | How user data is executed: formats, `#cloud-config`, stages, logs, re-running |
 | [Auto Scaling Groups](auto-scaling-groups.md) | Capacity, launch templates, health checks, scaling policies, termination, lifecycle hooks |
+| [Application Auto Scaling](application-auto-scaling.md) | Scaling ECS, DynamoDB, Aurora, Lambda; scaling plans; extra ASG exam details |
 | [Elastic Load Balancing](elastic-load-balancing.md) | ALB, NLB, GWLB, listeners, target groups, cross-zone, TLS/SNI, sticky sessions |
 | [Scaling and Load Balancing](scaling-load-balancing.md) | Short summary of ASG and ELB |
 | [Exam Info and Tips](exam-tips.md) | Scenario → answer cheat sheet, traps |
