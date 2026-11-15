@@ -41,6 +41,33 @@ Notes:
 - Identity-based policies **omit** `Principal` (it is implied); resource-based policies **require** it.
 - `NotAction` with `Allow` does **not** deny the rest — it allows everything *except* the listed actions.
 
+## ARNs (Amazon Resource Names)
+
+An ARN identifies **one resource anywhere in AWS**. It is **globally unique**, not just unique within a region, because the partition, region and account are part of it:
+
+```
+arn:partition:service:region:account-id:resource
+arn:aws:lambda:eu-north-1:123456789012:function:my-func
+```
+
+| Field | Meaning |
+|---|---|
+| **partition** | `aws`, `aws-cn` (China), `aws-us-gov` (GovCloud) |
+| **service** | `s3`, `iam`, `ec2`, `lambda`… |
+| **region** | Where the resource lives (empty for global services) |
+| **account-id** | Owning account (empty for some services) |
+| **resource** | `type/name`, `type:name` or just a name, depending on the service |
+
+Two functions named `my-func` in different regions or accounts have **different ARNs**.
+
+Some fields can be empty:
+
+- **Global services have no region**: `arn:aws:iam::123456789012:role/MyRole`
+- **S3 buckets have no region and no account**: `arn:aws:s3:::my-bucket` (bucket names are already globally unique within a partition)
+- **AWS managed policies** use `aws` as the account: `arn:aws:iam::aws:policy/ReadOnlyAccess`
+
+**Unique at a point in time, not forever.** Delete a resource and create a new one with the same name, and it gets the **same ARN**. Any policy naming that ARN now applies to the new resource. IAM users and roles also carry an internal **unique ID** (`AIDA…` for users, `AROA…` for roles) that **changes** when you recreate them. Trust and resource policies in other accounts store that ID, so recreating a role breaks them (the policy then shows the ID instead of the ARN) until you save the policy again.
+
 ## Policy types
 
 | Type | Attached to | Grants? | Purpose |

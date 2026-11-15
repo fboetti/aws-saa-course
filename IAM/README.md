@@ -57,7 +57,7 @@ AWS account
 | **Permission boundary** | Maximum permissions an identity may ever have (never grants by itself) |
 | **SCP** | Organization-level maximum permissions for member accounts (never grants by itself) |
 | **Session policy** | Inline filter passed when assuming a role/federating; narrows the session |
-| **ARN** | `arn:partition:service:region:account-id:resource` — how policies name resources |
+| **ARN** | `arn:partition:service:region:account-id:resource` — how policies name resources; globally unique ([details](policies.md#arns-amazon-resource-names)) |
 
 ## Users vs Roles — the Core Decision
 
