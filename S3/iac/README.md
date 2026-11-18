@@ -15,7 +15,7 @@ The same idea — "create one S3 bucket" — written with four IaC tools. All fo
 - **CDK** is not a separate engine: it generates a CloudFormation template from real code, and adds high-level constructs (e.g. `grant_read`, auto-delete of objects) that would be many lines of raw YAML.
 - **Terraform** and **Pulumi** are **multi-cloud** and keep their own state. Terraform uses a DSL (HCL); Pulumi uses general-purpose languages.
 
-**Exam note:** SAA-C03 asks only about **CloudFormation** (and CDK/SAM as ways to produce it): "repeatable, version-controlled infrastructure across accounts/regions" → CloudFormation (StackSets for many accounts). Terraform and Pulumi are third-party tools and never the expected answer.
+**Exam note:** SAA-C03 asks only about **CloudFormation** (and CDK/**SAM** as ways to produce it; **SAM** = **Serverless Application Model**, a CloudFormation extension with shorthand for Lambda, API Gateway, DynamoDB, etc.): "repeatable, version-controlled infrastructure across accounts/regions" → CloudFormation (StackSets for many accounts). Terraform and Pulumi are third-party tools and never the expected answer.
 
 ## Notes on each folder
 
