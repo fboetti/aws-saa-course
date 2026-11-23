@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Basic Lambda function defined with AWS SAM
+Resources:
+  HelloFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: hello-function
+      Runtime: python3.12
+      Handler: app.lambda_handler
+      CodeUri: HelloFunction
+      MemorySize: 128
+      Timeout: 10
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+    Metadata:
+      SamResourceId: HelloFunction
+Outputs:
+  HelloFunctionArn:
+    Description: ARN of the Lambda function
+    Value:
+      Fn::GetAtt:
+      - HelloFunction
+      - Arn
