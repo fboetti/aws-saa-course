@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambda function packaged as a container image with AWS SAM
+Resources:
+  HelloDockerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: hello-docker-function
+      PackageType: Image
+      Architectures:
+      - arm64
+      MemorySize: 128
+      Timeout: 10
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      ImageUri: hellodockerfunction:python3.12-arm64-v1
+    Metadata:
+      DockerContext: /Users/fabioleonardi/Desktop/projects/aws-saa-course/Lambda/docker
+      DockerTag: python3.12-arm64-v1
+      Dockerfile: Dockerfile
+      SamResourceId: HelloDockerFunction
+Outputs:
+  HelloDockerFunctionArn:
+    Description: ARN of the Lambda function
+    Value:
+      Fn::GetAtt:
+      - HelloDockerFunction
+      - Arn

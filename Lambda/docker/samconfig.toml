@@ -1,0 +1,13 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "sam-app"
+resolve_s3 = true
+s3_prefix = "sam-app"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+image_repositories = ["HelloDockerFunction=719623059777.dkr.ecr.eu-north-1.amazonaws.com/samapp7427b055/hellodockerfunction301fd3b9repo"]
+
+[default.global.parameters]
+region = "eu-north-1"
