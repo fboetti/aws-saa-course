@@ -40,9 +40,19 @@ Producers ──► [ Kinesis Data Streams ] ──► Consumers (Lambda / Flink
 | **Kinesis Agent** (installed on servers, tails log files) | **Managed Service for Apache Flink** |
 | Third-party tools and AWS services (e.g. CloudWatch Logs subscription, IoT Core) | **Firehose** |
 
+### Kinesis Producer Library (KPL)
+
+The KPL is a library that makes high-throughput writing to a stream more efficient than calling the SDK directly. It is **built for Java**: it runs a native C++ child process that the Java API wraps, so it is **hard to use if you are not familiar with Java** (other languages have to talk to that process through a more awkward interface, and the SDK is usually the easier choice).
+
+- **Aggregation**: packs many small user records into one Kinesis record to use each shard's 1,000 records/s limit better.
+- **Batching**: sends several records in one `PutRecords` call.
+- **Automatic retries** on failed writes, plus CloudWatch metrics.
+- **Adds latency**: records wait in a buffer (`RecordMaxBufferedTime`, 100 ms by default). If you need the lowest latency, use the SDK instead.
+- **Consumers must deaggregate**: use the **KCL** (which handles it) or the KPL deaggregation module. A plain SDK consumer sees the packed records.
+
 ### Shared vs Enhanced Fan-Out
 
-| | **Shared (classic)** | **Enhanced fan-out** |
+| | **Shared (classic)** | **Enhanced fan-out (EFO)** |
 |---|---|---|
 | Throughput | **2 MB/s per shard**, shared by all consumers | **2 MB/s per shard per consumer** |
 | Model | Pull (`GetRecords`) | **Push** over HTTP/2 (`SubscribeToShard`) |
@@ -50,6 +60,8 @@ Producers ──► [ Kinesis Data Streams ] ──► Consumers (Lambda / Flink
 | Use when | Few consumers, cost-sensitive | Many consumers needing full throughput |
 
 ## Amazon Data Firehose
+
+Firehose is similar to Data Streams (both ingest streaming data from producers), but it is **simpler and less customizable**. It trades control for convenience: there are no shards to size, no consumers to write and no scaling to manage. You pick a destination and AWS delivers the data. In exchange, you lose custom consumers, replay, per-record ordering control and storage, and you accept near-real-time latency because of buffering.
 
 - **Serverless** and fully managed. It loads streaming data into destinations without writing consumer code.
 - **Destinations**: **S3**, **Redshift** (via an S3 `COPY`), **OpenSearch**, **Splunk**, HTTP endpoints, and partners (Datadog, MongoDB, New Relic and others).
