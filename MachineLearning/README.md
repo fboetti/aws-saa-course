@@ -64,11 +64,49 @@ AWS offers **pre-trained, fully managed AI/ML services** you call through an **A
 
 ## Rekognition (the one asked most)
 
-- **Image and video** analysis through API calls. Video is processed **asynchronously** from **S3** or in **streaming** from **Kinesis Video Streams**.
-- **Content moderation** flags inappropriate content (with **A2I** for human review of uncertain results).
-- **Facial analysis and search**: build a **face collection**, then search it (identity verification, access).
-- **Custom Labels** to train it to find **your own objects**.
-- Pricing: **per image analyzed** or **per minute of video**.
+**Rekognition** is a managed **computer vision** service that analyzes **images and video** through simple API calls, with no ML expertise needed.
+
+| Feature | What it does |
+|---|---|
+| **Labels** | Detects **objects, scenes, activities** (car, beach, "playing soccer") |
+| **Face detection and analysis** | Locates faces and returns attributes (**emotions**, age range, glasses, smile, etc.) |
+| **Face comparison / search** | **Compares** two faces, or searches a **face collection** (identity verification, access control) |
+| **Celebrity recognition** | Identifies well-known people |
+| **Content moderation** | Flags **inappropriate / unsafe** content (explicit, violent) |
+| **Text in image (OCR)** | Detects text in photos, signs, license plates (for **documents/forms** use **Textract**) |
+| **PPE detection** | Checks for helmets, masks, gloves on people |
+| **Custom Labels** | Train it to find **your own objects** (e.g. your logo or product defects) with a small labeled dataset |
+| **Face Liveness** | Confirms a **real person** (not a photo/video spoof) is present |
+
+- **Input**: images from **S3** or sent as **bytes** (sync API calls). **Video** is processed **asynchronously** from **S3**, or in **streaming** from **Kinesis Video Streams** (results to **Kinesis Data Streams** / **SNS**).
+- **Face collections**: **index** faces once (stored as **vectors**, not images), then search them. Typical use: "who is this person?" against a set of known employees.
+- **Content moderation** flags unsafe content, with **A2I** for **human review** of low-confidence results.
+- **Common architecture**: image uploaded to **S3** → **Lambda** → **Rekognition** → results in **DynamoDB** / **SNS** notification.
+- **Security and privacy**: **IAM**, **KMS**, **VPC endpoints**. Responsible AI note: face recognition has policy limits (e.g. **law enforcement** use is restricted), and you can **opt out** of content use for service improvement.
+- Pricing: **per image analyzed** or **per minute of video**, plus **training and inference hours** for Custom Labels, and per face **stored** in collections.
+- **Exam**: "**detect objects / faces / unsafe content** in images or video", "**compare faces**", "**moderate** user uploads" → **Rekognition**. "**Extract text from forms/tables**" → **Textract**.
+
+## Amazon Textract
+
+**Textract** is a managed service that **extracts text, forms and tables** from **scanned documents, PDFs and images** using ML. It goes beyond plain **OCR** because it understands the **structure** of the document (which value belongs to which field).
+
+| Feature | What it does |
+|---|---|
+| **Text detection (OCR)** | Extracts **printed text and handwriting** (lines and words) |
+| **Forms** | Extracts **key-value pairs** (e.g. "Name: John", "Date: 01/05") |
+| **Tables** | Extracts **rows, columns and cells** |
+| **Queries** | Ask **natural-language questions** about a document ("What is the total amount?") |
+| **Signatures / Layout** | Detects **signatures** and the document layout (titles, paragraphs, lists) |
+| **AnalyzeExpense** | Pulls **vendor, line items, totals** from **invoices and receipts** |
+| **AnalyzeID** | Extracts data from **passports and driver's licenses** |
+| **Lending** | Classifies and extracts data from **mortgage/loan** document packages |
+
+- **Input**: images (**JPEG, PNG**), **PDF**, **TIFF**, from **S3** or as bytes. **Synchronous** API for single-page documents, **asynchronous** for multi-page PDFs (results via **SNS**, then fetch the output).
+- **Output**: JSON of **blocks** with **text, geometry and confidence scores**. Low-confidence results can go to **A2I** for **human review**.
+- **Common pipeline**: document uploaded to **S3** → **Lambda** → **Textract** → **Comprehend** (entities, PII) → store in **DynamoDB** / **S3** / **Athena**.
+- **Security**: **IAM**, **KMS**, **VPC endpoints**. Useful for **PII-heavy** documents (IDs, medical forms), so combine with **Comprehend** PII detection or **Macie**.
+- Pricing: **per page** processed, with different rates per feature (text only is cheapest, forms/tables/queries cost more).
+- **Exam**: "**Extract text, forms and tables** from scanned documents / invoices / IDs" → **Textract**. "**Objects / faces** in photos" → **Rekognition**. "**Meaning** of text (sentiment, entities)" → **Comprehend**.
 
 ## Amazon Comprehend
 
@@ -181,6 +219,54 @@ AWS offers **pre-trained, fully managed AI/ML services** you call through an **A
 - **Security**: data is **encrypted** (KMS), private to your account and **not shared** with other customers. **IAM** and **VPC endpoints** supported.
 - Pricing: **pay per use** (data ingested, training hours, and **recommendations/TPS** served), no minimum fees.
 - **Exam**: "**Recommendations** / personalization (same as Amazon.com)" → **Personalize**. "**Forecast** future demand" → **Forecast**. "**Fraud**" → **Fraud Detector**.
+
+## Amazon Translate
+
+**Translate** is a managed **neural machine translation** service that translates text between languages quickly and with natural-sounding results. Used to **localize** websites, apps, support content, and to translate user-generated content.
+
+- **Languages**: 75+ languages, with **automatic source language detection** (`auto`, which uses **Comprehend** behind the scenes).
+- **Modes**:
+  - **Real-time**: synchronous API for short text (e.g. chat messages, reviews).
+  - **Batch**: asynchronous jobs that translate **large sets of documents** from **S3** and write results back to **S3**. Supports plain text, **HTML**, **Word (.docx)**, **PowerPoint**, **Excel** and more.
+- **Customization** (no model training):
+  - **Custom Terminology**: a **glossary** that forces specific translations (brand names, product terms, acronyms).
+  - **Active Custom Translation**: provide **parallel data** (source/target example pairs) to tune translations to your style and domain.
+  - **Formality** setting and **profanity masking**.
+- **Integrations**: **Lambda**, **S3**, **Transcribe** (translate subtitles), **Comprehend** (analyze after translating), **Polly** (speak the translation).
+- **Common pipeline**: **Transcribe** (audio → text) → **Translate** → **Polly** (text → speech) for real-time multilingual conversations. Or **Translate** → **Comprehend** to run sentiment on reviews in many languages.
+- **Security**: **IAM**, **KMS**, **VPC endpoints**, **TLS**, and you can **opt out** of content use for service improvement.
+- Pricing: **per character** translated, with a free tier. Custom translation costs more.
+- **Exam**: "**Translate** text / localize content into multiple languages" → **Translate**. "**Speech to text**" → **Transcribe**. "**Detect the language** of a text" → **Comprehend**.
+
+## Amazon Polly
+
+**Polly** is a managed **text-to-speech (TTS)** service that turns text into **lifelike speech** using deep learning. Used to make apps **talk** (voice assistants, e-learning, accessibility, IVR, audiobooks, news readers).
+
+- **Voices and languages**: dozens of languages and voices. Voice engines: **Standard**, **Neural** (more natural), **Long-form** and **Generative** (most expressive).
+- **Output**: **MP3**, **OGG**, **PCM** audio, and **speech marks** (JSON metadata with **word/sentence timing**, useful for **lip-sync** and highlighting text as it is read). **Real-time streaming** or **asynchronous** synthesis tasks that write to **S3**.
+- **Customization**:
+  - **SSML** (Speech Synthesis Markup Language): control **pronunciation, pitch, speed, volume, pauses, emphasis** and whispering.
+  - **Lexicons**: custom **pronunciation dictionaries** (e.g. say "AWS" as "A. W. S." or expand acronyms), applied across requests.
+  - **Brand Voice**: a **custom** voice built **with AWS** for your company (a paid engagement).
+- **Integrations**: **Lex** (spoken bot responses), **Connect** (contact center), **Lambda**, **S3**, **SNS** (task completion notification).
+- Pricing: **per character** converted (cheaper for Standard than Neural), with a free tier.
+- **Exam**: "**Text to speech**", "make the app **read aloud** / lifelike voice", "customize **pronunciation**" → **Polly** (**SSML / lexicons**). "**Speech to text**" → **Transcribe**.
+
+## AWS Data Exchange
+
+**Data Exchange** is a **data marketplace**: a managed service to **find, subscribe to, and use third-party data** in the cloud, and to **publish and sell your own data**. It is not an ML service itself, but it feeds **analytics and ML** (training data, enrichment).
+
+- **Providers** (financial, healthcare, retail, geospatial, weather, etc.) publish **data products**. **Subscribers** browse the catalog (also visible in **AWS Marketplace**), subscribe, and get the data delivered into their own account.
+- **Data set types**:
+  - **Files**: delivered to **S3** (CSV, Parquet, PDF, images...).
+  - **API**: call the provider's API through **API Gateway** (AWS handles auth and **SigV4** signing).
+  - **Amazon Redshift data shares**: query the provider's data **in place** in Redshift, no copy or ETL.
+  - **AWS Lake Formation** data permissions: access shared data through the Glue Data Catalog.
+- **Auto-export**: new **revisions** (updates) from the provider can be **exported automatically to your S3 bucket**, so your pipeline always has the latest data.
+- **Subscription and billing**: handled through **AWS Marketplace** (monthly or annual terms, **private offers**), so you pay on your **AWS bill**. Providers set terms and price.
+- **Security**: **IAM** for access, **KMS** encryption, **CloudTrail** logging, and **EventBridge** events when new revisions are published (trigger **Lambda** / Glue jobs).
+- **Common pipeline**: Data Exchange → **S3** → **Glue** / **Athena** / **Redshift** → **SageMaker** or **QuickSight**.
+- **Exam**: "**Subscribe to / buy third-party data** and load it into S3 automatically", "**monetize** your data" → **Data Exchange**. "**Sell software or AMIs**" → **AWS Marketplace**. "**Share data** between your own accounts" → **Lake Formation**, **Redshift data sharing** or **S3** cross-account access.
 
 ## Textract vs Rekognition vs Comprehend
 
